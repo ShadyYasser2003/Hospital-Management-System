@@ -1,0 +1,257 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Hospital Management System Design System */
+
+@layer base {
+  :root {
+    /* Healthcare-inspired color palette */
+    --background: 210 20% 98%;
+    --foreground: 215 25% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 215 25% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 215 25% 15%;
+
+    /* Primary: Medical Blue */
+    --primary: 210 80% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Soft Teal */
+    --secondary: 180 30% 94%;
+    --secondary-foreground: 180 40% 30%;
+
+    --muted: 210 20% 96%;
+    --muted-foreground: 215 15% 45%;
+
+    /* Accent: Healthcare Teal */
+    --accent: 175 60% 40%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Success: Health Green */
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
+
+    /* Warning: Amber */
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    /* Info: Light Blue */
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 214 20% 88%;
+    --input: 214 20% 88%;
+    --ring: 210 80% 45%;
+
+    --radius: 0.5rem;
+
+    /* Sidebar */
+    --sidebar-background: 210 35% 18%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 175 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 30% 25%;
+    --sidebar-accent-foreground: 210 20% 95%;
+    --sidebar-border: 210 30% 25%;
+    --sidebar-ring: 175 60% 50%;
+
+    /* Dashboard specific */
+    --dashboard-card-1: 210 80% 45%;
+    --dashboard-card-2: 175 60% 40%;
+    --dashboard-card-3: 142 70% 40%;
+    --dashboard-card-4: 38 92% 50%;
+  }
+
+  .dark {
+    --background: 215 25% 10%;
+    --foreground: 210 20% 95%;
+
+    --card: 215 25% 13%;
+    --card-foreground: 210 20% 95%;
+
+    --popover: 215 25% 13%;
+    --popover-foreground: 210 20% 95%;
+
+    --primary: 210 80% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 215 25% 18%;
+    --secondary-foreground: 210 20% 90%;
+
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 15% 60%;
+
+    --accent: 175 60% 45%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 210 80% 55%;
+
+    --sidebar-background: 215 30% 8%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 175 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 25% 15%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 215 25% 15%;
+    --sidebar-ring: 175 60% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+@layer components {
+  /* Dashboard stat cards */
+  .stat-card {
+    @apply rounded-xl p-6 text-white shadow-lg transition-transform hover:scale-[1.02];
+  }
+
+  .stat-card-primary {
+    background: linear-gradient(135deg, hsl(var(--dashboard-card-1)), hsl(210 80% 35%));
+  }
+
+  .stat-card-accent {
+    background: linear-gradient(135deg, hsl(var(--dashboard-card-2)), hsl(175 60% 30%));
+  }
+
+  .stat-card-success {
+    background: linear-gradient(135deg, hsl(var(--dashboard-card-3)), hsl(142 70% 30%));
+  }
+
+  .stat-card-warning {
+    background: linear-gradient(135deg, hsl(var(--dashboard-card-4)), hsl(38 92% 40%));
+  }
+
+  /* Page header */
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-title {
+    @apply text-2xl font-bold text-foreground;
+  }
+
+  .page-description {
+    @apply text-muted-foreground mt-1;
+  }
+
+  /* Data tables */
+  .data-table {
+    @apply w-full border-collapse;
+  }
+
+  .data-table th {
+    @apply bg-muted px-4 py-3 text-left text-sm font-semibold text-foreground;
+  }
+
+  .data-table td {
+    @apply border-t border-border px-4 py-3 text-sm;
+  }
+
+  .data-table tr:hover {
+    @apply bg-muted/50;
+  }
+
+  /* Status badges */
+  .status-badge {
+    @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+
+  .status-active {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .status-inactive {
+    @apply bg-gray-100 text-gray-800;
+  }
+
+  .status-urgent {
+    @apply bg-red-100 text-red-800;
+  }
+
+  /* Form styles */
+  .form-section {
+    @apply space-y-4 rounded-lg border border-border bg-card p-6;
+  }
+
+  .form-section-title {
+    @apply mb-4 text-lg font-semibold text-foreground;
+  }
+
+  /* Quick action buttons */
+  .quick-action {
+    @apply flex flex-col items-center justify-center gap-2 rounded-lg border border-border bg-card p-4 text-center transition-all hover:border-primary hover:shadow-md;
+  }
+
+  .quick-action-icon {
+    @apply h-10 w-10 rounded-full bg-primary/10 p-2 text-primary;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.3s ease-in-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slide-in {
+    animation: slideIn 0.3s ease-out;
+  }
+
+  @keyframes slideIn {
+    from {
+      transform: translateX(-20px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+}
