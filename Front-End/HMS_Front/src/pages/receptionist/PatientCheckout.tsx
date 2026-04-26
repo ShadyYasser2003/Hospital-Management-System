@@ -48,12 +48,7 @@ const PatientCheckout = () => {
     try {
       await updatePatient.mutateAsync({
         id: selectedPatient.id,
-        payload: {
-          name: selectedPatient.name,
-          email: selectedPatient.email,
-          phone: selectedPatient.phone,
-          status: 'DISCHARGED',
-        } as never,
+        payload: { status: 'DISCHARGED' },
       });
       toast.success(`${selectedPatient.name} has been checked out successfully`);
       setSelectedPatient(null);

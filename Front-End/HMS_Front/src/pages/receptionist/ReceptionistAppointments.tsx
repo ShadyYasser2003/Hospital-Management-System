@@ -45,8 +45,17 @@ const ReceptionistAppointments = () => {
     time: '', type: 'CONSULTATION', notes: '',
   });
 
+  // Filter doctors by selected department — use departmentName if available, fall back to specialization keyword match
   const filteredDoctors = formData.department
-    ? doctors.filter((d) => d.specialization?.toLowerCase().includes(formData.department.toLowerCase()))
+    ? doctors.filter((d) => {
+        if (d.departmentName) {
+          return d.departmentName.toLowerCase() === formData.department.toLowerCase();
+        }
+        // fallback: partial keyword match between specialization and department name
+        const spec = d.specialization?.toLowerCase() ?? '';
+        const dept = formData.department.toLowerCase();
+        return spec.includes(dept.split(' ')[0]) || dept.includes(spec.split(' ')[0] ?? '');
+      })
     : doctors;
 
   const pending = appointments.filter((a) => a.status?.toUpperCase() === 'PENDING');

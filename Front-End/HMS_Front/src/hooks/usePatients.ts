@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import patientService, { CreatePatientPayload } from '@/services/patientService';
+import patientService, { CreatePatientPayload, UpdatePatientPayload } from '@/services/patientService';
 
 export const PATIENTS_KEY = 'patients';
 
@@ -27,7 +27,7 @@ export const useCreatePatient = () => {
 export const useUpdatePatient = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, payload }: { id: number | string; payload: Partial<CreatePatientPayload> }) =>
+    mutationFn: ({ id, payload }: { id: number | string; payload: UpdatePatientPayload }) =>
       patientService.update(id, payload),
     onSuccess: () => qc.invalidateQueries({ queryKey: [PATIENTS_KEY] }),
   });

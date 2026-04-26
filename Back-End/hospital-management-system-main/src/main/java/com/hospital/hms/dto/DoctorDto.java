@@ -21,4 +21,5 @@ public class DoctorDto extends UserDto {
     private String hireDate;   // String — parsed manually in service
     private String employmentStatus;
     private String shift;
+    private String departmentName;
 }

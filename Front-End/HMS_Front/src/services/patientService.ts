@@ -47,6 +47,29 @@ export interface CreatePatientPayload {
   medicalHistory?: string;
 }
 
+/** Fields accepted by PUT /api/patients/:id */
+export interface UpdatePatientPayload {
+  name?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  emergencyContact?: string;
+  insuranceProvider?: string;
+  insuranceNumber?: string;
+  allergies?: string;
+  medicalHistory?: string;
+  diagnosis?: string;
+  notes?: string;
+  /** Patient status: ACTIVE | ADMITTED | DISCHARGED */
+  status?: string;
+  // vitals
+  bloodPressure?: string;
+  temperature?: string;
+  pulse?: string;
+  weight?: string;
+  height?: string;
+}
+
 const patientService = {
   async getAll(): Promise<PatientDto[]> {
     const { data } = await api.get<PatientDto[]>('/api/patients');
@@ -68,7 +91,7 @@ const patientService = {
     return data;
   },
 
-  async update(id: number | string, payload: Partial<CreatePatientPayload>): Promise<PatientDto> {
+  async update(id: number | string, payload: UpdatePatientPayload): Promise<PatientDto> {
     const { data } = await api.put<PatientDto>(`/api/patients/${id}`, payload);
     return data;
   },

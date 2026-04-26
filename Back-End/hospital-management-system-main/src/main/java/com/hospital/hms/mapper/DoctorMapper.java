@@ -31,6 +31,7 @@ public class DoctorMapper {
                 .hireDate(DateUtils.format(doctor.getHireDate()))
                 .employmentStatus(doctor.getEmploymentStatus() != null ? doctor.getEmploymentStatus().toString() : null)
                 .shift(doctor.getShift())
+                .departmentName(doctor.getDepartment() != null ? doctor.getDepartment().getName() : null)
                 .build();
     }
 

@@ -21,6 +21,7 @@ export interface DoctorDto {
   hireDate?: string;
   employmentStatus?: string;
   shift?: string;
+  departmentName?: string;
 }
 
 export interface CreateDoctorPayload {

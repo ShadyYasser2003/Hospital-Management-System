@@ -56,7 +56,7 @@ const PatientSearch = () => {
   const handleSave = async () => {
     if (!editPatient) return;
     try {
-      await updatePatient.mutateAsync({ id: editPatient.id, payload: editFormData as never });
+      await updatePatient.mutateAsync({ id: editPatient.id, payload: editFormData });
       toast.success('Patient updated successfully');
       setEditPatient(null);
     } catch (err) {
@@ -98,7 +98,7 @@ const PatientSearch = () => {
 
       <Dialog open={!!editPatient} onOpenChange={() => setEditPatient(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Edit Patient</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Edit Patient — {editPatient?.name}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div><Label>Full Name</Label><Input value={editFormData.name} onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })} /></div>
             <div><Label>Phone</Label><Input value={editFormData.phone} onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })} /></div>

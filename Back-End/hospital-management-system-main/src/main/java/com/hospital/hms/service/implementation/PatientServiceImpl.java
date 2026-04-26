@@ -92,6 +92,11 @@ public class PatientServiceImpl implements PatientService {
         if (patientDTO.getMedicalHistory() != null)   patient.setMedicalHistory(patientDTO.getMedicalHistory());
         if (patientDTO.getDiagnosis() != null)        patient.setDiagnosis(patientDTO.getDiagnosis());
         if (patientDTO.getNotes() != null)            patient.setNotes(patientDTO.getNotes());
+        if (patientDTO.getStatus() != null) {
+            try {
+                patient.setPatientStatus(com.hospital.hms.Enum.PatientStatus.valueOf(patientDTO.getStatus().toUpperCase().trim()));
+            } catch (IllegalArgumentException ignored) {}
+        }
         // vitals
         if (patientDTO.getBloodPressure() != null)    patient.setBloodPressure(patientDTO.getBloodPressure());
         if (patientDTO.getTemperature() != null)      patient.setTemperature(patientDTO.getTemperature());
