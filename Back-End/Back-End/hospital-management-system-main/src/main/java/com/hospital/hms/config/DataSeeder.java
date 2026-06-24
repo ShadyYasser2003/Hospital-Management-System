@@ -26,6 +26,7 @@ public class DataSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) {
         seedAdmin();
+        seedSuperAdmin();
     }
 
     private void seedAdmin() {
@@ -58,5 +59,42 @@ public class DataSeeder implements CommandLineRunner {
 
         userRepository.save(admin);
         log.info("✅ Admin seeded — username: admin | password: admin123");
+    }
+
+    /**
+     * Seeds a primary Super Admin account that logs into the dashboard.
+     * Login is performed with the USERNAME (or national ID), not the email.
+     *   • username : superadmin
+     *   • email    : superadmin@hospital.com
+     *   • password : SuperAdmin@123
+     */
+    private void seedSuperAdmin() {
+        var existing = userRepository.findByUsername("superadmin");
+        if (existing.isPresent()) {
+            String storedPassword = existing.get().getPassword();
+            if ((storedPassword.startsWith("$2a$") || storedPassword.startsWith("$2b$"))
+                    && passwordEncoder.matches("SuperAdmin@123", storedPassword)) {
+                log.info("Super Admin user already exists with correct password — skipping seed.");
+                return;
+            }
+            log.warn("Super Admin password mismatch — deleting and re-seeding...");
+            userRepository.delete(existing.get());
+            userRepository.flush();
+        }
+
+        Admin superAdmin = new Admin();
+        superAdmin.setUsername("superadmin");
+        superAdmin.setNationalId("9999999999");
+        superAdmin.setPassword(passwordEncoder.encode("SuperAdmin@123"));
+        superAdmin.setName("Super Administrator");
+        superAdmin.setDateOfBirth(LocalDate.of(1985, 5, 15));
+        superAdmin.setEmail("superadmin@hospital.com");
+        superAdmin.setPhone("+201000000000");
+        superAdmin.setAddress("Hospital HQ, Administration Floor");
+        superAdmin.setRole(UserRole.ADMIN);
+        superAdmin.setUserStatus(UserStatus.ACTIVE);
+
+        userRepository.save(superAdmin);
+        log.info("✅ Super Admin seeded — login username: superadmin | email: superadmin@hospital.com | password: SuperAdmin@123");
     }
 }

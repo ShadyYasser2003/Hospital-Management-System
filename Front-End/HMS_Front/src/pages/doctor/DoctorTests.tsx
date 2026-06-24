@@ -5,7 +5,7 @@ import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { doctorNavItems } from './DoctorDashboard';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
+import { useDoctorPatients } from '@/hooks/usePatients';
 import { useTestRequestsByDoctor, useCreateTestRequest } from '@/hooks/useTestRequests';
 import { TestRequestDto } from '@/services/testRequestService';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,7 @@ const TEST_TYPES = [
 
 const DoctorTests = () => {
   const { user } = useAuth();
-  const { data: patients = [] }                                = usePatients();
+  const { data: patients = [] }                                = useDoctorPatients(user?.id);
   const { data: tests = [], isLoading }                        = useTestRequestsByDoctor(user?.id);
   const createTest = useCreateTestRequest();
 

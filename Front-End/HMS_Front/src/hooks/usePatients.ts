@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import patientService, { CreatePatientPayload, UpdatePatientPayload } from '@/services/patientService';
+import doctorService from '@/services/doctorService';
 
 export const PATIENTS_KEY = 'patients';
 
@@ -7,6 +8,18 @@ export const usePatients = () =>
   useQuery({
     queryKey: [PATIENTS_KEY],
     queryFn: patientService.getAll,
+  });
+
+/**
+ * Returns only the patients connected to a specific doctor
+ * (patients who have an appointment with, or are assigned to, that doctor).
+ * Used to keep each doctor scoped to their own patients only.
+ */
+export const useDoctorPatients = (doctorId: number | string | undefined) =>
+  useQuery({
+    queryKey: [PATIENTS_KEY, 'doctor', doctorId],
+    queryFn: () => doctorService.getPatients(doctorId!),
+    enabled: !!doctorId,
   });
 
 export const usePatient = (id: number | string | undefined) =>

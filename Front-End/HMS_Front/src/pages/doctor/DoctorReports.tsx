@@ -4,7 +4,6 @@ import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import { doctorNavItems } from './DoctorDashboard';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
 import { useTestRequestsByDoctor } from '@/hooks/useTestRequests';
 import { usePrescriptionsByDoctor } from '@/hooks/usePrescriptions';
 import { TestRequestDto } from '@/services/testRequestService';

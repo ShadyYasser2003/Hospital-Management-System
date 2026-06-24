@@ -9,8 +9,11 @@ import com.hospital.hms.entity.Doctor;
 import com.hospital.hms.entity.Speciality;
 import com.hospital.hms.exception.UserNameAlreadyExistException;
 import com.hospital.hms.exception.UserNotFoundException;
+import com.hospital.hms.entity.Appointment;
+import com.hospital.hms.entity.Patient;
 import com.hospital.hms.mapper.DoctorMapper;
 import com.hospital.hms.mapper.PatientMapper;
+import com.hospital.hms.repository.AppointmentRepository;
 import com.hospital.hms.repository.DoctorRepository;
 import com.hospital.hms.repository.SpecialityRepository;
 import com.hospital.hms.service.DoctorService;
@@ -22,12 +25,15 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 @Service
 @RequiredArgsConstructor
 public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
     private final SpecialityRepository specialityRepository;
+    private final AppointmentRepository appointmentRepository;
     private final PasswordEncoder passwordEncoder;
     @Override
     public List<DoctorDto> getAllDoctors() {
@@ -176,10 +182,30 @@ public class DoctorServiceImpl implements DoctorService {
     }
     @Override
     public List<PatientDTO> getDoctorPatients(Long id){
-        Doctor doctor= doctorRepository.findById(id).orElseThrow(()->new UserNotFoundException("Doctor not found"));
-        if(doctor.getPatients() == null){
-            return Collections.emptyList();
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Doctor not found"));
+
+        // Build the doctor's patient list from two sources, de-duplicated by patient id:
+        //   1. Patients explicitly assigned to the doctor (many-to-many relationship)
+        //   2. Patients who have at least one appointment with this doctor
+        // This guarantees a doctor only ever sees patients connected to them.
+        Map<Long, Patient> uniquePatients = new LinkedHashMap<>();
+
+        if (doctor.getPatients() != null) {
+            for (Patient p : doctor.getPatients()) {
+                uniquePatients.put(p.getId(), p);
+            }
         }
-        return doctor.getPatients().stream().map(PatientMapper::mapToPatientDto).toList();
+
+        for (Appointment appointment : appointmentRepository.findByDoctorId(id)) {
+            Patient p = appointment.getPatient();
+            if (p != null) {
+                uniquePatients.put(p.getId(), p);
+            }
+        }
+
+        return uniquePatients.values().stream()
+                .map(PatientMapper::mapToPatientDto)
+                .toList();
     }
 }

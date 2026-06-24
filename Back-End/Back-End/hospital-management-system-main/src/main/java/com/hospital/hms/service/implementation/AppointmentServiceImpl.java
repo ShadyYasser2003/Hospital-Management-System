@@ -152,6 +152,19 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         Appointment saved = appointmentRepository.save(appointment);
 
+        // Link the patient to the doctor so the doctor's patient list stays accurate.
+        // Guard against duplicates and only persist when a new link is actually added.
+        try {
+            if (doctor.getPatients() == null || doctor.getPatients().stream()
+                    .noneMatch(p -> p.getId().equals(patient.getId()))) {
+                doctor.addPatient(patient);
+                doctorRepository.save(doctor);
+            }
+        } catch (Exception e) {
+            log.warn("Could not link patient {} to doctor {}: {}",
+                    patient.getId(), doctor.getId(), e.getMessage());
+        }
+
         notify(patient.getId(),
                 "Appointment Booked",
                 "Your appointment with Dr. " + doctor.getName() + " on " +

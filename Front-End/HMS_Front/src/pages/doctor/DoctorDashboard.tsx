@@ -8,7 +8,7 @@ import { useAppointmentsByDoctor } from '@/hooks/useAppointments';
 import { usePrescriptionsByDoctor } from '@/hooks/usePrescriptions';
 import { useTestRequestsByDoctor } from '@/hooks/useTestRequests';
 import { useUnreadCount } from '@/hooks/useNotifications';
-import { usePatients } from '@/hooks/usePatients';
+import { useDoctorPatients } from '@/hooks/usePatients';
 import { LayoutDashboard, Calendar, Users, FileText, Pill, ClipboardList, User, Bed, TestTube, Bell } from 'lucide-react';
 
 export const doctorNavItems = [
@@ -30,7 +30,7 @@ export const DoctorDashboard = () => {
   const { data: appointments = [] }  = useAppointmentsByDoctor(user?.id);
   const { data: prescriptions = [] } = usePrescriptionsByDoctor(user?.id);
   const { data: tests = [] }         = useTestRequestsByDoctor(user?.id);
-  const { data: patients = [] }      = usePatients();
+  const { data: patients = [] }      = useDoctorPatients(user?.id);
   const { data: unreadCount = 0 }    = useUnreadCount(user?.id);
 
   const todayAppts   = appointments.filter(a => a.appointmentDate === today);

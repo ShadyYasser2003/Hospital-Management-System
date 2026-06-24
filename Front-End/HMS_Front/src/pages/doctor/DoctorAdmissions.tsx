@@ -5,7 +5,7 @@ import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { doctorNavItems } from './DoctorDashboard';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients, useUpdatePatient } from '@/hooks/usePatients';
+import { useDoctorPatients, useUpdatePatient } from '@/hooks/usePatients';
 import { PatientDto } from '@/services/patientService';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -24,7 +24,7 @@ import { Plus, Bed } from 'lucide-react';
  */
 const DoctorAdmissions = () => {
   const { user } = useAuth();
-  const { data: patients = [], isLoading } = usePatients();
+  const { data: patients = [], isLoading } = useDoctorPatients(user?.id);
   const updatePatient = useUpdatePatient();
 
   const [dialogOpen, setDialogOpen]           = useState(false);
