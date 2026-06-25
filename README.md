@@ -514,3 +514,74 @@ npm run dev
 ---
 
 *تم بناء هذا المشروع بـ ❤️ كمشروع تخرج*
+
+
+---
+
+# 🏗️ Enterprise DevOps Repository Structure
+
+This repository is organized for enterprise-grade containerization and future
+deployment. The application source code is unchanged; the directories below are
+the **DevOps foundation** (preparation phase — nothing is built or deployed yet).
+
+```
+HMS_last_v/
+├── backend/                 # Backend container build (Spring Boot, Java 17)
+│   ├── Dockerfile           #   multi-stage build → slim non-root JRE image
+│   ├── .dockerignore
+│   └── README.md
+│
+├── frontend/                # Frontend container build (React + Vite)
+│   ├── Dockerfile           #   Node build → Nginx runtime
+│   ├── .dockerignore
+│   ├── nginx/               #   SPA-aware Nginx config (gzip, caching, headers)
+│   │   ├── nginx.conf
+│   │   └── default.conf
+│   └── README.md
+│
+├── docker/                  # Compose orchestration
+│   ├── docker-compose.dev.yml   #  frontend + backend + mysql
+│   ├── docker-compose.prod.yml  #  frontend + backend (external database)
+│   ├── .env.example             #  placeholders only — no secrets
+│   └── README.md
+│
+├── infrastructure/          # IaC scaffolding (empty placeholders)
+│   ├── terraform/  ├── kubernetes/  ├── helm/  ├── ansible/
+│   └── README.md
+│
+├── monitoring/              # Observability scaffolding (empty placeholders)
+│   ├── prometheus/  ├── grafana/  ├── loki/
+│   └── README.md
+│
+├── scripts/                 # Automation entrypoints (placeholder no-ops)
+│   ├── build.sh  ├── deploy.sh  ├── start.sh  ├── stop.sh
+│   └── README.md
+│
+├── docs/                    # Project & deployment documentation
+│   ├── README.md
+│   └── deployment/README.md
+│
+├── .github/workflows/       # CI/CD location (folder only — no pipelines yet)
+├── .editorconfig            # Consistent coding styles across editors
+├── .gitignore               # Monorepo ignore rules
+│
+├── Back-End/                # Spring Boot application source (UNCHANGED)
+└── Front-End/               # React/Vite application source (UNCHANGED)
+```
+
+## Phase status
+
+🚧 **Preparation phase only.** No images are built, no infrastructure is
+provisioned, no CI/CD pipelines exist, and nothing is deployed. Each top-level
+DevOps folder contains its own `README.md` describing its purpose and future
+contents.
+
+## Notes
+
+- **Two sets of start/stop scripts:** the **project-root** `start.sh` / `stop.sh`
+  run the app directly (Maven + Vite) for local development and are functional.
+  The `scripts/` versions are future Docker-based entrypoints and are placeholders.
+- **No hardcoded backend URL:** the Nginx reverse-proxy block uses environment
+  placeholders and stays commented out until the deployment phase.
+- **Production database is external:** `docker-compose.prod.yml` intentionally has
+  no `db` service.
