@@ -1,0 +1,113 @@
+# =============================================================================
+#  Production Environment — Module Composition
+#  Orchestrates all infrastructure modules for the HMS production environment.
+# =============================================================================
+
+locals {
+  common_tags = {
+    Project     = var.project_name
+    Environment = var.environment
+    ManagedBy   = "terraform"
+  }
+}
+
+# ── VPC ───────────────────────────────────────────────────────────────────────
+module "vpc" {
+  source = "../../modules/vpc"
+
+  vpc_cidr     = var.vpc_cidr
+  project_name = var.project_name
+  environment  = var.environment
+  tags         = local.common_tags
+}
+
+# ── Security Groups ──────────────────────────────────────────────────────────
+module "security" {
+  source = "../../modules/security"
+
+  vpc_id       = module.vpc.vpc_id
+  project_name = var.project_name
+  environment  = var.environment
+  tags         = local.common_tags
+}
+
+# ── S3 Buckets ───────────────────────────────────────────────────────────────
+module "s3" {
+  source = "../../modules/s3"
+
+  project_name = var.project_name
+  environment  = var.environment
+  tags         = local.common_tags
+}
+
+# ── IAM Roles & Policies ────────────────────────────────────────────────────
+module "iam" {
+  source = "../../modules/iam"
+
+  project_name  = var.project_name
+  environment   = var.environment
+  aws_region    = var.aws_region
+  s3_bucket_arn = module.s3.uploads_bucket_arn
+  tags          = local.common_tags
+}
+
+# ── ECR Repositories ─────────────────────────────────────────────────────────
+module "ecr" {
+  source = "../../modules/ecr"
+
+  project_name     = var.project_name
+  repository_names = ["backend", "frontend"]
+  tags             = local.common_tags
+}
+
+# ── RDS (MySQL) ──────────────────────────────────────────────────────────────
+module "rds" {
+  source = "../../modules/rds"
+
+  project_name         = var.project_name
+  environment          = var.environment
+  database_username    = var.database_username
+  database_password    = var.database_password
+  instance_class       = var.rds_instance_class
+  multi_az             = var.rds_multi_az
+  db_subnet_group_name = module.vpc.db_subnet_group_name
+  security_group_id    = module.security.database_security_group_id
+  monitoring_role_arn  = module.rds.monitoring_role_arn
+  tags                 = local.common_tags
+}
+
+# ── Application Load Balancer ────────────────────────────────────────────────
+module "alb" {
+  source = "../../modules/alb"
+
+  project_name      = var.project_name
+  environment       = var.environment
+  vpc_id            = module.vpc.vpc_id
+  public_subnet_ids = module.vpc.public_subnet_ids
+  security_group_id = module.security.alb_security_group_id
+  tags              = local.common_tags
+}
+
+# ── ACM Certificate ──────────────────────────────────────────────────────────
+module "acm" {
+  source = "../../modules/acm"
+
+  project_name              = var.project_name
+  environment               = var.environment
+  domain_name               = var.domain_name
+  subject_alternative_names = ["*.${var.domain_name}"]
+  route53_zone_id           = var.route53_zone_id
+  tags                      = local.common_tags
+}
+
+# ── EKS (module only — not provisioned in this phase) ────────────────────────
+# module "eks" {
+#   source = "../../modules/eks"
+#
+#   project_name       = var.project_name
+#   environment        = var.environment
+#   private_subnet_ids = module.vpc.private_subnet_ids
+#   cluster_role_arn   = module.iam.eks_cluster_role_arn
+#   node_role_arn      = module.iam.eks_node_role_arn
+#   tags               = local.common_tags
+# }
