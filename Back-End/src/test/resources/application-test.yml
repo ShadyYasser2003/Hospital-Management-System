@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:hms_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE;MODE=MySQL
+    username: sa
+    password: ""
+    driver-class-name: org.h2.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  mail:
+    host: localhost
+    port: 25
+    username: test@test.com
+    password: test
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
+
+logging:
+  level:
+    root: WARN
+    com.hospital: WARN
+
+jwt:
+  secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+
+hospital:
+  name: "Test Hospital"
+  email: test@hospital.com
