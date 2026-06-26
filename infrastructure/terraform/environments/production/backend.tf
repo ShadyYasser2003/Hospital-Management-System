@@ -1,18 +1,15 @@
 # =============================================================================
-#  Terraform Remote State Backend
-#  Store state in S3 with DynamoDB locking for team collaboration.
-#
-#  PREREQUISITES (create manually once, before first `terraform init`):
-#    1. S3 bucket: hms-terraform-state-<account-id>
-#    2. DynamoDB table: hms-terraform-locks (partition key: LockID)
+#  Terraform Backend — Local state for initial deployment
+#  Migrate to S3 backend after infrastructure is stable.
 # =============================================================================
 
-terraform {
-  backend "s3" {
-    bucket         = "hms-terraform-state"
-    key            = "production/terraform.tfstate"
-    region         = "us-east-1"
-    encrypt        = true
-    dynamodb_table = "hms-terraform-locks"
-  }
-}
+# Using local state for bootstrapping. Once stable, uncomment below:
+# terraform {
+#   backend "s3" {
+#     bucket         = "hms-terraform-state-529088275461"
+#     key            = "production/terraform.tfstate"
+#     region         = "us-east-1"
+#     encrypt        = true
+#     dynamodb_table = "hms-terraform-locks"
+#   }
+# }

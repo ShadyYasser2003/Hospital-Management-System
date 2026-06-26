@@ -1,6 +1,7 @@
 # =============================================================================
 #  Production Environment — Module Composition
-#  Orchestrates all infrastructure modules for the HMS production environment.
+#  Architecture: AWS (compute/data) + Cloudflare (DNS/SSL/CDN/proxy)
+#  NO Route53, NO CloudFront, NO ACM — Cloudflare Free handles edge.
 # =============================================================================
 
 locals {
@@ -72,7 +73,7 @@ module "rds" {
   multi_az             = var.rds_multi_az
   db_subnet_group_name = module.vpc.db_subnet_group_name
   security_group_id    = module.security.database_security_group_id
-  monitoring_role_arn  = module.rds.monitoring_role_arn
+  monitoring_role_arn  = ""
   tags                 = local.common_tags
 }
 
@@ -88,26 +89,18 @@ module "alb" {
   tags              = local.common_tags
 }
 
-# ── ACM Certificate ──────────────────────────────────────────────────────────
-module "acm" {
-  source = "../../modules/acm"
+# ── EKS Cluster ──────────────────────────────────────────────────────────────
+module "eks" {
+  source = "../../modules/eks"
 
-  project_name              = var.project_name
-  environment               = var.environment
-  domain_name               = var.domain_name
-  subject_alternative_names = ["*.${var.domain_name}"]
-  route53_zone_id           = var.route53_zone_id
-  tags                      = local.common_tags
+  project_name       = var.project_name
+  environment        = var.environment
+  private_subnet_ids = module.vpc.private_subnet_ids
+  cluster_role_arn   = module.iam.eks_cluster_role_arn
+  node_role_arn      = module.iam.eks_node_role_arn
+  instance_types     = ["t3.medium"]
+  desired_nodes      = 2
+  min_nodes          = 1
+  max_nodes          = 3
+  tags               = local.common_tags
 }
-
-# ── EKS (module only — not provisioned in this phase) ────────────────────────
-# module "eks" {
-#   source = "../../modules/eks"
-#
-#   project_name       = var.project_name
-#   environment        = var.environment
-#   private_subnet_ids = module.vpc.private_subnet_ids
-#   cluster_role_arn   = module.iam.eks_cluster_role_arn
-#   node_role_arn      = module.iam.eks_node_role_arn
-#   tags               = local.common_tags
-# }
