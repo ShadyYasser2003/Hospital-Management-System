@@ -57,3 +57,11 @@ Thumbs.db
 
 # ---- Docker ---------------------------------------------------------------
 # (Compose env files are covered by the .env rules above.)
+
+# ── Terraform state & plans (NEVER commit — contains secrets) ─────────────
+**/.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfplan
+tfplan*
+.terraform.lock.hcl
