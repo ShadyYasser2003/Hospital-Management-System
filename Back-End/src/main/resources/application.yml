@@ -1,0 +1,57 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/hms_backend
+    username: root
+    password: "root"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: "salemsheer4321@gmail.com"
+    password: "cphiffcvduydkhsx"
+
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+logging:
+  level:
+    root: INFO
+    com.hms: DEBUG
+
+jwt:
+  secret: "404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970"
+  access-token-expiration: 900000
+  refresh-token-expiration: 604800000
+
+hospital:
+  name: "MediCore Hospital"
+  email: salemsheer4321@gmail.com
+  blood-bank-email: bloodbank@medicorehosp.com
+
+# ── PayPal ──────────────────────────────────────────────────────────────────
+paypal:
+  client-id: "ATCn_rdsFqX6s3bnje7kAjpAA4djBmDzKKOTgW89tbgdfPvka_YWi433ZnhJFLHAnuCQ53rCQckgMAr5"
+  client-secret: "EGcSDVFRhVxUn1RCcWyjkIPErJOJHAjA-f8QPc-k5AAS8cT1eT5c7lHVbiySW7aRYWhhwVh7jWpdDYM0"
+  mode: sandbox
+
+# ── Kashier ─────────────────────────────────────────────────────────────────
+kashier:
+  merchant-id: "MID-47186-789"
+  api-key: "40c2565e-5396-45fe-978a-651b8e21a434"
+  secret-key: "cdc44a7da18ec58b7060165e5fcfccf3$dcebb2a653b97ef0717dc4f311a3688a6ebcb33530634e9fc94cd0447a904c2d6803998ffb1f94e9c5fdf9d538903585"
+  mode: test
+  redirect-url: "https://catalyst-spooky-projector.ngrok-free.dev/api/kashier/payment/success"
+  webhook-url: "https://catalyst-spooky-projector.ngrok-free.dev/kashier/api/kashier/webhook"
