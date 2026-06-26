@@ -2,7 +2,7 @@
 #  RDS Module — Managed MySQL for the Hospital Management System
 # =============================================================================
 
-resource "aws_db_instance" "main" {
+  resource "aws_db_instance" "main" {
   identifier = "${var.project_name}-${var.environment}-mysql"
 
   # Engine
@@ -31,13 +31,12 @@ resource "aws_db_instance" "main" {
   backup_window           = "03:00-04:00"
   maintenance_window      = "sun:04:00-sun:05:00"
   copy_tags_to_snapshot   = true
-  skip_final_snapshot     = false
-  final_snapshot_identifier = "${var.project_name}-${var.environment}-final-snapshot"
+  skip_final_snapshot     = true
 
-  # Monitoring
-  monitoring_interval          = 60
-  monitoring_role_arn          = var.monitoring_role_arn
-  performance_insights_enabled = true
+  # Monitoring (disabled if no role ARN provided)
+  monitoring_interval          = var.monitoring_role_arn != "" ? 60 : 0
+  monitoring_role_arn          = var.monitoring_role_arn != "" ? var.monitoring_role_arn : null
+  performance_insights_enabled = false
 
   # Parameters
   parameter_group_name = aws_db_parameter_group.main.name

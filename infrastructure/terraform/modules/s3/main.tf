@@ -7,7 +7,7 @@ resource "aws_s3_bucket" "uploads" {
 
   tags = merge(var.tags, {
     Name    = "${var.project_name}-${var.environment}-uploads"
-    Purpose = "Application file uploads (lab reports, images)"
+    Purpose = "Application file uploads"
   })
 }
 
@@ -43,6 +43,8 @@ resource "aws_s3_bucket_lifecycle_configuration" "uploads" {
   rule {
     id     = "transition-old-versions"
     status = "Enabled"
+
+    filter {}
 
     noncurrent_version_transition {
       noncurrent_days = 30
