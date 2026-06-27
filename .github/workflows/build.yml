@@ -71,7 +71,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Trivy filesystem scan (skip Java deps — scanned in image step)
+      - name: Trivy secret scan (skip Java/Node to avoid Maven rate limit)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
@@ -79,8 +79,7 @@ jobs:
           scanners: secret
           exit-code: 0
           format: table
-        env:
-          TRIVY_SKIP_DIRS: "Back-End/Back-End/hospital-management-system-main,node_modules,.terraform"
+          skip-dirs: "Back-End,infrastructure/terraform,node_modules,.terraform,.cache"
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
