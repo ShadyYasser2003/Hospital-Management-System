@@ -13,7 +13,7 @@ spec:
 
   source:
     repoURL: https://github.com/OWNER/hospital-management-system.git
-    targetRevision: main
+    targetRevision: v0.0.1
     path: infrastructure/helm/frontend
 
     helm:
