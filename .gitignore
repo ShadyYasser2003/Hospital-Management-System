@@ -65,3 +65,7 @@ Thumbs.db
 *.tfplan
 tfplan*
 .terraform.lock.hcl
+Back-End/Back-End/hospital-management-system-main/target/
+Back-End/src/target/
+*.tfstate
+*.tfstate.backup

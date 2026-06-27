@@ -1,0 +1,18 @@
+# =============================================================================
+#  Gitleaks Configuration
+#  Scans for secrets in the current codebase.
+# =============================================================================
+
+title = "HMS Gitleaks Config"
+
+[allowlist]
+  description = "Safe test/example values that are not real secrets"
+  paths = [
+    '''\.env\.example$''',
+    '''application-test\.yml$''',
+    '''target/''',
+    '''node_modules/''',
+    '''\.terraform/''',
+    '''\.tfstate''',
+  ]
+  regexTarget = "match"

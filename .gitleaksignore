@@ -1,0 +1,5 @@
+# Gitleaks allowlist — only test/example values that are NOT real secrets
+# Real secrets must NEVER be added here.
+
+# Test-only JWT secret (not used in production, H2 in-memory DB only)
+test-only-secret-key-not-for-production-use-minimum-64-chars-aaaa
