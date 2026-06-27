@@ -10,7 +10,7 @@ metadata:
     - resources-finalizer.argocd.argoproj.io
 spec:
   project: hms
-
+ 
   source:
     # Helm chart from Git repository
     repoURL: https://github.com/OWNER/hospital-management-system.git
