@@ -7,7 +7,7 @@ replicaCount: 3
 
 image:
   repository: ""  # Set to ECR URL
-  tag: "v0.1.33"
+  tag: "v0.1.35"
   pullPolicy: Always
 
 resources:
