@@ -9,6 +9,9 @@ export interface PatientDto {
   phone: string;
   role: string;
   status: string;
+  admissionDate?: string;
+  dischargeDate?: string;
+  bedChargePerDay?: number;
   address?: string;
   avatar?: string;
   // Patient-specific
@@ -62,6 +65,9 @@ export interface UpdatePatientPayload {
   notes?: string;
   /** Patient status: ACTIVE | ADMITTED | DISCHARGED */
   status?: string;
+  admissionDate?: string;
+  dischargeDate?: string;
+  bedChargePerDay?: number;
   // vitals
   bloodPressure?: string;
   temperature?: string;

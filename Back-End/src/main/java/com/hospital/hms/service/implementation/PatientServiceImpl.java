@@ -4,25 +4,41 @@ import com.hospital.hms.Enum.Gender;
 import com.hospital.hms.Enum.PatientStatus;
 import com.hospital.hms.Enum.UserRole;
 import com.hospital.hms.Enum.UserStatus;
+import com.hospital.hms.Enum.NotificationType;
 import com.hospital.hms.dto.PatientDTO;
 import com.hospital.hms.entity.Patient;
 import com.hospital.hms.exception.EmailAlreadyExistException;
 import com.hospital.hms.exception.NationalIDAlreadyExists;
 import com.hospital.hms.exception.PatientNotFoundException;
 import com.hospital.hms.mapper.PatientMapper;
+import com.hospital.hms.repository.NurseRepository;
 import com.hospital.hms.repository.PatientRepository;
+import com.hospital.hms.repository.PrescriptionRepository;
+import com.hospital.hms.service.NotificationService;
 import com.hospital.hms.service.PatientService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PatientServiceImpl implements PatientService {
     private final PatientRepository patientRepository;
     private final PasswordEncoder passwordEncoder;
+    private final PrescriptionRepository prescriptionRepository;
+    private final NurseRepository nurseRepository;
+    private final NotificationService notificationService;
+
+    private void notify(Long recipientId, String title, String message,
+                        NotificationType type, String url) {
+        try { notificationService.sendNotification(recipientId, title, message, type, url); }
+        catch (Exception e) { log.warn("Patient notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
     @Override
     public List<PatientDTO> getAllPatients() {
         return patientRepository.findAll()
@@ -94,9 +110,66 @@ public class PatientServiceImpl implements PatientService {
         if (patientDTO.getNotes() != null)            patient.setNotes(patientDTO.getNotes());
         if (patientDTO.getStatus() != null) {
             try {
-                patient.setPatientStatus(com.hospital.hms.Enum.PatientStatus.valueOf(patientDTO.getStatus().toUpperCase().trim()));
+                PatientStatus newStatus = com.hospital.hms.Enum.PatientStatus.valueOf(patientDTO.getStatus().toUpperCase().trim());
+                // Guard: patient must have at least one prescription before being admitted
+                if (newStatus == PatientStatus.ADMITTED) {
+                    if (!prescriptionRepository.existsByPatient_Id(patient.getId())) {
+                        throw new RuntimeException(
+                            "Patient must have at least one prescription from a doctor before being admitted.");
+                    }
+                }
+                patient.setPatientStatus(newStatus);
+                // auto-stamp admission/discharge dates
+                if (newStatus == PatientStatus.ADMITTED && patient.getAdmissionDate() == null) {
+                    patient.setAdmissionDate(LocalDateTime.now());
+                    patient.setDischargeDate(null);
+                    // Notify all nurses about new admission
+                    final String patientName = patient.getName();
+                    final Long patientId = patient.getId();
+                    try {
+                        nurseRepository.findAll().forEach(nurse ->
+                            notify(nurse.getId(),
+                                    "New Patient Admitted",
+                                    "Patient " + patientName + " has been admitted. Please monitor their care.",
+                                    NotificationType.GENERAL,
+                                    "/nurse/patients"));
+                    } catch (Exception e) {
+                        log.warn("Could not notify nurses about admission: {}", e.getMessage());
+                    }
+                    // Notify the patient
+                    notify(patientId,
+                            "You Have Been Admitted",
+                            "You have been admitted to the hospital. Our nursing team will take care of you.",
+                            NotificationType.GENERAL,
+                            "/patient/history");
+                } else if (newStatus == PatientStatus.DISCHARGED) {
+                    if (patient.getDischargeDate() == null)
+                        patient.setDischargeDate(LocalDateTime.now());
+                    // Notify patient of discharge
+                    notify(patient.getId(),
+                            "Discharge Confirmed",
+                            "You have been discharged. Please follow your doctor's instructions.",
+                            NotificationType.GENERAL,
+                            "/patient/history");
+                }
             } catch (IllegalArgumentException ignored) {}
         }
+        if (patientDTO.getAdmissionDate() != null && !patientDTO.getAdmissionDate().isBlank()) {
+            try { patient.setAdmissionDate(java.time.LocalDateTime.parse(patientDTO.getAdmissionDate())); }
+            catch (Exception e) {
+                try { patient.setAdmissionDate(java.time.LocalDate.parse(patientDTO.getAdmissionDate()).atStartOfDay()); }
+                catch (Exception ignored) {}
+            }
+        }
+        if (patientDTO.getDischargeDate() != null && !patientDTO.getDischargeDate().isBlank()) {
+            try { patient.setDischargeDate(java.time.LocalDateTime.parse(patientDTO.getDischargeDate())); }
+            catch (Exception e) {
+                try { patient.setDischargeDate(java.time.LocalDate.parse(patientDTO.getDischargeDate()).atStartOfDay()); }
+                catch (Exception ignored) {}
+            }
+        }
+        if (patientDTO.getBedChargePerDay() != null)
+            patient.setBedChargePerDay(patientDTO.getBedChargePerDay());
         // vitals
         if (patientDTO.getBloodPressure() != null)    patient.setBloodPressure(patientDTO.getBloodPressure());
         if (patientDTO.getTemperature() != null)      patient.setTemperature(patientDTO.getTemperature());

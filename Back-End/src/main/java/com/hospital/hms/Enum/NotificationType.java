@@ -32,6 +32,7 @@ public enum NotificationType {
 
     // ── Billing ───────────────────────────────────────────
     INVOICE_CREATED,
+    CHARGE_ADDED,
     PAYMENT_RECEIVED,
 
     // ── System ────────────────────────────────────────────

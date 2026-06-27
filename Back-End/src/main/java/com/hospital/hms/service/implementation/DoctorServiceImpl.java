@@ -12,6 +12,7 @@ import com.hospital.hms.exception.UserNotFoundException;
 import com.hospital.hms.mapper.DoctorMapper;
 import com.hospital.hms.mapper.PatientMapper;
 import com.hospital.hms.repository.DoctorRepository;
+import com.hospital.hms.repository.AppointmentRepository;
 import com.hospital.hms.repository.SpecialityRepository;
 import com.hospital.hms.service.DoctorService;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DoctorServiceImpl implements DoctorService {
     private final DoctorRepository doctorRepository;
+    private final AppointmentRepository appointmentRepository;
     private final SpecialityRepository specialityRepository;
     private final PasswordEncoder passwordEncoder;
     @Override
@@ -172,10 +174,18 @@ public class DoctorServiceImpl implements DoctorService {
     }
     @Override
     public List<PatientDTO> getDoctorPatients(Long id){
-        Doctor doctor= doctorRepository.findById(id).orElseThrow(()->new UserNotFoundException("Doctor not found"));
-        if(doctor.getPatients() == null){
-            return Collections.emptyList();
-        }
-        return doctor.getPatients().stream().map(PatientMapper::mapToPatientDto).toList();
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("Doctor not found"));
+        // Derive patients from appointments — more reliable than ManyToMany
+        return appointmentRepository.findByDoctor(doctor).stream()
+                .map(a -> a.getPatient())
+                .filter(p -> p != null)
+                .collect(java.util.stream.Collectors.toMap(
+                        p -> p.getId(),
+                        p -> p,
+                        (a, b) -> a))   // deduplicate by patient id
+                .values().stream()
+                .map(PatientMapper::mapToPatientDto)
+                .toList();
     }
 }

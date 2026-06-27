@@ -11,18 +11,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { LayoutDashboard, UserPlus, Search, Calendar, LogOut, User, Edit, AlertCircle } from 'lucide-react';
+import { Search, Edit, AlertCircle } from 'lucide-react';
 import { usePatients, useUpdatePatient } from '@/hooks/usePatients';
 import { PatientDto } from '@/services/patientService';
-
-const navItems = [
-  { label: 'Dashboard', path: '/receptionist', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Register Patient', path: '/receptionist/register', icon: <UserPlus className="h-5 w-5" /> },
-  { label: 'Search Patient', path: '/receptionist/search', icon: <Search className="h-5 w-5" /> },
-  { label: 'Appointments', path: '/receptionist/appointments', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Check Out', path: '/receptionist/checkout', icon: <LogOut className="h-5 w-5" /> },
-  { label: 'Profile', path: '/receptionist/profile', icon: <User className="h-5 w-5" /> },
-];
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
 const PatientSearch = () => {
   const { data: patients = [], isLoading, error } = usePatients();
@@ -87,7 +79,7 @@ const PatientSearch = () => {
   ];
 
   return (
-    <DashboardLayout navItems={navItems} title="Search Patients">
+    <DashboardLayout navItems={receptionistNavItems} title="Search Patients">
       <PageHeader title="Search Patients" description="Find and manage patient records" />
 
       <div className="mb-6 max-w-md">

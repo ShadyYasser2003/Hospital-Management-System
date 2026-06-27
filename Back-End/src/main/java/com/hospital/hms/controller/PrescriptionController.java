@@ -33,6 +33,11 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptions);
     }
 
+    @GetMapping("/doctor/{doctorId}")
+    public ResponseEntity<List<PrescriptionDTO>> getPrescriptionsByDoctor(@PathVariable Long doctorId) {
+        return ResponseEntity.ok(prescriptionService.getPrescriptionsByDoctor(doctorId));
+    }
+
     @PostMapping
     public ResponseEntity<PrescriptionDTO> createPrescription(@RequestBody PrescriptionDTO prescriptionDTO) {
         PrescriptionDTO createdPrescription = prescriptionService.createPrescription(prescriptionDTO);

@@ -8,6 +8,7 @@ public interface PrescriptionService {
     public List<PrescriptionDTO> getAllPrescriptions() ;
     public PrescriptionDTO getPrescriptionById(Long id);
     public List<PrescriptionDTO> getPrescriptionsByPatient(Long patientId);
+    public List<PrescriptionDTO> getPrescriptionsByDoctor(Long doctorId);
     public PrescriptionDTO createPrescription(PrescriptionDTO prescriptionDTO);
     public PrescriptionDTO updatePrescription(Long id, PrescriptionDTO prescriptionDTO);
     public void deletePrescription(Long id);

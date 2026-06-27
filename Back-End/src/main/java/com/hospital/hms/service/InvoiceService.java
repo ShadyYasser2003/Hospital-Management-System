@@ -26,4 +26,14 @@ public interface InvoiceService {
                                    String description, Double amount);
     InvoiceDTO addTestCharge(Long patientId, Long testRequestId,
                              String testType, Double amount);
+    InvoiceDTO addBedCharge(Long patientId, int days, Double chargePerDay,
+                            String admissionDate, String dischargeDate);
+    InvoiceDTO addConsultationCharge(Long patientId, Long appointmentId,
+                                     String description, Double amount);
+
+    /**
+     * Throws RuntimeException if the patient has no open (PENDING/PARTIAL) invoice.
+     * Call this at the start of any operation that requires a pre-existing invoice.
+     */
+    void requireOpenInvoice(Long patientId);
 }

@@ -30,10 +30,10 @@ public class MedicineDispensationServiceImpl implements MedicineDispensationServ
     private final PrescriptionRepository prescriptionRepository;
     private final PharmacistRepository pharmacistRepository;
     private final PatientRepository patientRepository;
+
     @Override
     public MedicineDispensationDto createNewMedicineDispensation(MedicineDispensationDto dispensationDto) {
-        MedicineDispensation dispensation= DispensationMapper.mapFromDto(dispensationDto);
-
+        MedicineDispensation dispensation = DispensationMapper.mapFromDto(dispensationDto);
         return DispensationMapper.mapToDto(repository.save(dispensation));
     }
 

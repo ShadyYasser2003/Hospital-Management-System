@@ -8,18 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { LayoutDashboard, UserPlus, Search, Calendar, LogOut, User, CheckCircle, BedDouble } from 'lucide-react';
+import { Search, CheckCircle, BedDouble, UserPlus, LogOut } from 'lucide-react';
 import { usePatients, useUpdatePatient } from '@/hooks/usePatients';
 import { PatientDto } from '@/services/patientService';
-
-const navItems = [
-  { label: 'Dashboard', path: '/receptionist', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Register Patient', path: '/receptionist/register', icon: <UserPlus className="h-5 w-5" /> },
-  { label: 'Search Patient', path: '/receptionist/search', icon: <Search className="h-5 w-5" /> },
-  { label: 'Appointments', path: '/receptionist/appointments', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Check Out', path: '/receptionist/checkout', icon: <LogOut className="h-5 w-5" /> },
-  { label: 'Profile', path: '/receptionist/profile', icon: <User className="h-5 w-5" /> },
-];
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
 const PatientCheckout = () => {
   const { data: patients = [], isLoading } = usePatients();
@@ -87,7 +79,7 @@ const PatientCheckout = () => {
   };
 
   return (
-    <DashboardLayout navItems={navItems} title="Patient Checkout">
+    <DashboardLayout navItems={receptionistNavItems} title="Patient Checkout">
       <PageHeader title="Patient Checkout" description="Admit and discharge patients" />
 
       <div className="max-w-3xl space-y-6">

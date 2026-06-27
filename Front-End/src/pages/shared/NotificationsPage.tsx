@@ -46,6 +46,8 @@ const getTypeConfig = (type: string) => {
       return { icon: <XCircle className="h-5 w-5" />, color: 'text-destructive', bg: 'bg-destructive/10' };
     case 'INVOICE_CREATED':
       return { icon: <Receipt className="h-5 w-5" />, color: 'text-accent', bg: 'bg-accent/10' };
+    case 'CHARGE_ADDED':
+      return { icon: <Receipt className="h-5 w-5" />, color: 'text-orange-600', bg: 'bg-orange-50 dark:bg-orange-950' };
     case 'PAYMENT_RECEIVED':
       return { icon: <CheckCircle2 className="h-5 w-5" />, color: 'text-blue-600', bg: 'bg-blue-50 dark:bg-blue-950' };
     case 'PRESCRIPTION_CREATED':

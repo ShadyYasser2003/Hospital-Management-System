@@ -70,6 +70,10 @@ public class Patient extends User{
     @Enumerated(EnumType.STRING)
     private PatientStatus patientStatus = PatientStatus.ACTIVE;
 
+    private LocalDateTime admissionDate;
+    private LocalDateTime dischargeDate;
+    private Double bedChargePerDay;
+
     private String bloodPressure;
     private String temperature;
     private String pulse;

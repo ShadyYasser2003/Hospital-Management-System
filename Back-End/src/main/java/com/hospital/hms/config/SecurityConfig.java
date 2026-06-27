@@ -33,6 +33,9 @@ public class SecurityConfig {
     private static final String[] PUBLIC_URLS = {
             "/api/auth/login",
             "/api/auth/refresh-token",
+            "/api/departments",              // public — used on homepage without auth
+            "/api/departments/**",
+            "/api/specialities/**",          // public specialty listing
             "/api/kashier/webhook",          // Kashier server calls this — no auth header
             "/api/kashier/payment/success",  // browser redirect after Kashier payment
             "/api/kashier/payment/failure",
@@ -99,7 +102,7 @@ public class SecurityConfig {
                         // ── Doctor + Admin ──────────────────────────────────────
                         .requestMatchers("/api/doctor/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "PATIENT")
                         .requestMatchers("/api/appointments/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "PATIENT", "NURSE")
-                        .requestMatchers("/api/prescriptions/**").hasAnyRole("ADMIN", "DOCTOR", "PHARMACIST", "PATIENT")
+                        .requestMatchers("/api/prescriptions/**").hasAnyRole("ADMIN", "DOCTOR", "PHARMACIST", "PATIENT", "NURSE")
 
                         .requestMatchers("/api/nurse/**").hasAnyRole("ADMIN", "NURSE", "DOCTOR")
 
@@ -114,12 +117,12 @@ public class SecurityConfig {
 
                         // ── Technician ────────────────────────────────────────────
                         .requestMatchers("/api/technicians/**").hasAnyRole("ADMIN", "TECHNICIAN")
-                        .requestMatchers("/api/lab-tests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")
-                        .requestMatchers("/api/radiology-orders/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")
+                        .requestMatchers("/api/lab-tests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
+                        .requestMatchers("/api/radiology-orders/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
 
                         // ── Blood Bank ────────────────────────────────────────────
-                        .requestMatchers("/api/blood-bank/units/**").hasAnyRole("ADMIN", "TECHNICIAN")
-                        .requestMatchers("/api/blood-bank/requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")
+                        .requestMatchers("/api/blood-bank/units/**").hasAnyRole("ADMIN", "TECHNICIAN", "DOCTOR", "NURSE")
+                        .requestMatchers("/api/blood-bank/requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
 
                         // ── Users (admin + any authenticated user reading own data) ─
                         .requestMatchers("/api/users/**").authenticated()
@@ -135,6 +138,9 @@ public class SecurityConfig {
 
                         // ── Accountants ───────────────────────────────────────────
                         .requestMatchers("/api/accountants/**").hasAnyRole("ADMIN", "ACCOUNTANT")
+
+                        // ── Specialities & Departments ────────────────────────────
+                        .requestMatchers("/api/specialities/**").authenticated()
 
                         // ── Test Requests (legacy endpoint) ───────────────────────
                         .requestMatchers("/api/test-requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")

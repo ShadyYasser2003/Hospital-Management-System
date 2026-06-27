@@ -16,14 +16,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import { Plus, Pill, Trash2, Eye, AlertCircle } from 'lucide-react';
-import { usePatients } from '@/hooks/usePatients';
+import { useDoctorPatients, usePatients } from '@/hooks/usePatients';
 import { usePrescriptions, useCreatePrescription } from '@/hooks/usePrescriptions';
 import { useMedicines } from '@/hooks/useMedicines';
 import { PrescriptionDto } from '@/services/prescriptionService';
 
 const DoctorPrescriptions = () => {
   const { user } = useAuth();
-  const { data: patients = [] } = usePatients();
+  const { data: patients = [] } = useDoctorPatients(user?.id);
   const { data: prescriptions = [], isLoading, error } = usePrescriptions();
   const { data: medicines = [] } = useMedicines();
   const createPrescription = useCreatePrescription();

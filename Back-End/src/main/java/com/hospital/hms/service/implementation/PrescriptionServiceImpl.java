@@ -38,6 +38,7 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final DoctorRepository doctorRepository;
     private final MedicineRepository medicineRepository;
     private final PharmacistRepository pharmacistRepository;
+    private final NurseRepository nurseRepository;
     private final InvoiceService invoiceService;
     private final NotificationService notificationService;
 
@@ -72,9 +73,22 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     }
 
     @Override
+    public List<PrescriptionDTO> getPrescriptionsByDoctor(Long doctorId) {
+        Doctor doctor = doctorRepository.findById(doctorId)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        return prescriptionRepository.findByDoctor(doctor)
+                .stream()
+                .map(PrescriptionMapper::mapToPrescriptionDTO)
+                .toList();
+    }
+
+    @Override
     public PrescriptionDTO createPrescription(PrescriptionDTO prescriptionDTO) {
         Patient patient = patientRepository.findById(prescriptionDTO.getPatientId())
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
+
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
 
         Doctor doctor = doctorRepository.findById(prescriptionDTO.getDoctorId())
                 .orElseThrow(() -> new RuntimeException("Doctor not found"));
@@ -125,6 +139,19 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                         "/pharmacist/prescriptions"));
         } catch (Exception e) {
             log.warn("Could not notify pharmacists about prescription: {}", e.getMessage());
+        }
+
+        // Notify all nurses so they can monitor medication administration
+        try {
+            nurseRepository.findAll().forEach(nurse ->
+                notify(nurse.getId(),
+                        "New Prescription Issued",
+                        "Dr. " + doctor.getName() + " issued a prescription for patient " +
+                        patient.getName() + ". Monitor medication administration.",
+                        NotificationType.PRESCRIPTION_CREATED,
+                        "/nurse/medications"));
+        } catch (Exception e) {
+            log.warn("Could not notify nurses about prescription: {}", e.getMessage());
         }
 
         return PrescriptionMapper.mapToPrescriptionDTO(savedPrescription);
@@ -220,19 +247,47 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     public PrescriptionDTO markAsPartiallyDispensed(Long id) {
         Prescription prescription = prescriptionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Prescription not found"));
-
         prescription.setStatus(PrescriptionStatus.PARTIALLY_DISPENSED);
-        Prescription updatedPrescription = prescriptionRepository.save(prescription);
-        return PrescriptionMapper.mapToPrescriptionDTO(updatedPrescription);
+        Prescription updated = prescriptionRepository.save(prescription);
+
+        if (prescription.getPatient() != null)
+            notify(prescription.getPatient().getId(),
+                    "Prescription Partially Dispensed",
+                    "Part of your prescription has been dispensed. Please follow up with the pharmacy.",
+                    NotificationType.PRESCRIPTION_DISPENSED,
+                    "/patient/prescriptions");
+
+        if (prescription.getDoctor() != null)
+            notify(prescription.getDoctor().getId(),
+                    "Prescription Partially Dispensed",
+                    "Prescription for patient " + prescription.getPatientName() + " has been partially dispensed.",
+                    NotificationType.PRESCRIPTION_DISPENSED,
+                    "/doctor/prescriptions");
+
+        return PrescriptionMapper.mapToPrescriptionDTO(updated);
     }
 
     @Override
     public PrescriptionDTO cancelPrescription(Long id) {
         Prescription prescription = prescriptionRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Prescription not found"));
-
         prescription.setStatus(PrescriptionStatus.CANCELLED);
-        Prescription updatedPrescription = prescriptionRepository.save(prescription);
-        return PrescriptionMapper.mapToPrescriptionDTO(updatedPrescription);
+        Prescription updated = prescriptionRepository.save(prescription);
+
+        if (prescription.getPatient() != null)
+            notify(prescription.getPatient().getId(),
+                    "Prescription Cancelled",
+                    "Your prescription has been cancelled. Contact your doctor for more information.",
+                    NotificationType.PRESCRIPTION_DISPENSED,
+                    "/patient/prescriptions");
+
+        if (prescription.getDoctor() != null)
+            notify(prescription.getDoctor().getId(),
+                    "Prescription Cancelled",
+                    "Prescription for patient " + prescription.getPatientName() + " has been cancelled.",
+                    NotificationType.PRESCRIPTION_DISPENSED,
+                    "/doctor/prescriptions");
+
+        return PrescriptionMapper.mapToPrescriptionDTO(updated);
     }
 }

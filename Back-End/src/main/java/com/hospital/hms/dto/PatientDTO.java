@@ -22,6 +22,10 @@ public class PatientDTO extends UserDto {
     private String notes;
     private String status;
 
+    private String admissionDate;
+    private String dischargeDate;
+    private Double bedChargePerDay;
+
     private String bloodPressure;
     private String temperature;
     private String pulse;

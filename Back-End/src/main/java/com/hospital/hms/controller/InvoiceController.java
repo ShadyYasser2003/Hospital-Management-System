@@ -139,4 +139,15 @@ public class InvoiceController {
     public ResponseEntity<InvoiceDTO> cancel(@PathVariable Long id) {
         return ResponseEntity.ok(invoiceService.cancelInvoice(id));
     }
+
+    @PostMapping("/bed-charge")
+    public ResponseEntity<InvoiceDTO> addBedCharge(@RequestBody Map<String, Object> body) {
+        Long   patientId    = Long.parseLong(body.get("patientId").toString());
+        int    days         = Integer.parseInt(body.get("days").toString());
+        Double chargePerDay = Double.parseDouble(body.get("chargePerDay").toString());
+        String admissionDate  = body.containsKey("admissionDate")  ? body.get("admissionDate").toString()  : null;
+        String dischargeDate  = body.containsKey("dischargeDate")  ? body.get("dischargeDate").toString()  : null;
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(invoiceService.addBedCharge(patientId, days, chargePerDay, admissionDate, dischargeDate));
+    }
 }

@@ -12,28 +12,29 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { toast } from 'sonner';
-import { LayoutDashboard, UserPlus, Search, Calendar, LogOut, User, Plus, Check, X, AlertCircle } from 'lucide-react';
+import { Plus, Check, X, AlertCircle } from 'lucide-react';
 import { useAppointments, useCreateAppointment, useConfirmAppointment, useCancelAppointment } from '@/hooks/useAppointments';
 import { usePatients } from '@/hooks/usePatients';
+import { useInvoicesByStatus } from '@/hooks/useInvoices';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useQuery } from '@tanstack/react-query';
 import doctorService from '@/services/doctorService';
 import { AppointmentDto } from '@/services/appointmentService';
-
-const navItems = [
-  { label: 'Dashboard', path: '/receptionist', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Register Patient', path: '/receptionist/register', icon: <UserPlus className="h-5 w-5" /> },
-  { label: 'Search Patient', path: '/receptionist/search', icon: <Search className="h-5 w-5" /> },
-  { label: 'Appointments', path: '/receptionist/appointments', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Check Out', path: '/receptionist/checkout', icon: <LogOut className="h-5 w-5" /> },
-  { label: 'Profile', path: '/receptionist/profile', icon: <User className="h-5 w-5" /> },
-];
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
 const ReceptionistAppointments = () => {
   const { data: appointments = [], isLoading, error } = useAppointments();
   const { data: patients = [] } = usePatients();
+  const { data: pendingInvoices = [] }  = useInvoicesByStatus('PENDING');
+  const { data: partialInvoices = [] }  = useInvoicesByStatus('PARTIAL');
   const { data: departments = [] } = useDepartments();
   const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: doctorService.getAll });
+
+  // Only show patients who have an open invoice (PENDING or PARTIAL)
+  const openInvoicePatientIds = new Set(
+    [...pendingInvoices, ...partialInvoices].map(inv => String(inv.patientId))
+  );
+  const patientsWithInvoice = patients.filter(p => openInvoicePatientIds.has(String(p.id)));
   const createAppointment = useCreateAppointment();
   const confirmAppointment = useConfirmAppointment();
   const cancelAppointment = useCancelAppointment();
@@ -130,7 +131,7 @@ const ReceptionistAppointments = () => {
   ];
 
   return (
-    <DashboardLayout navItems={navItems} title="Appointments">
+    <DashboardLayout navItems={receptionistNavItems} title="Appointments">
       <PageHeader
         title="Appointment Management"
         description="Book and manage patient appointments"
@@ -147,7 +148,7 @@ const ReceptionistAppointments = () => {
                   <Select onValueChange={(v) => setFormData({ ...formData, patientId: v })}>
                     <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
                     <SelectContent>
-                      {patients.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.nationalId})</SelectItem>)}
+                      {patientsWithInvoice.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.nationalId})</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>

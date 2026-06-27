@@ -6,17 +6,8 @@ import ProfileForm from '@/components/shared/ProfileForm';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePatients } from '@/hooks/usePatients';
 import { useAppointments } from '@/hooks/useAppointments';
-import { LayoutDashboard, Calendar, Users, Search, User, UserPlus, ClipboardCheck, LogOut, Bell } from 'lucide-react';
-
-const navItems = [
-  { label: 'Dashboard',       path: '/receptionist',              icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Register Patient',path: '/receptionist/register',     icon: <UserPlus className="h-5 w-5" /> },
-  { label: 'Search Patient',  path: '/receptionist/search',       icon: <Search className="h-5 w-5" /> },
-  { label: 'Appointments',    path: '/receptionist/appointments',  icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Check Out',       path: '/receptionist/checkout',     icon: <LogOut className="h-5 w-5" /> },
-  { label: 'Notifications',   path: '/receptionist/notifications', icon: <Bell className="h-5 w-5" /> },
-  { label: 'Profile',         path: '/receptionist/profile',      icon: <User className="h-5 w-5" /> },
-];
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
+import { Calendar, Users, Search, UserPlus, ClipboardCheck, LogOut, FileText } from 'lucide-react';
 
 export const ReceptionistDashboard = () => {
   const { user } = useAuth();
@@ -30,7 +21,7 @@ export const ReceptionistDashboard = () => {
   const admittedPatients = patients.filter((p) => p.status?.toUpperCase() === 'ADMITTED');
 
   return (
-    <DashboardLayout navItems={navItems} title="Receptionist Dashboard">
+    <DashboardLayout navItems={receptionistNavItems} title="Receptionist Dashboard">
       <h1 className="text-2xl font-bold mb-2">Welcome, {user?.name}!</h1>
       <p className="text-muted-foreground mb-8">Manage patient registrations and appointments</p>
 
@@ -46,14 +37,14 @@ export const ReceptionistDashboard = () => {
         <QuickAction title="Register Patient" icon={<UserPlus className="h-5 w-5" />} to="/receptionist/register" />
         <QuickAction title="Search Patient" icon={<Search className="h-5 w-5" />} to="/receptionist/search" />
         <QuickAction title="Book Appointment" icon={<Calendar className="h-5 w-5" />} to="/receptionist/appointments" />
-        <QuickAction title="Check Out" icon={<LogOut className="h-5 w-5" />} to="/receptionist/checkout" />
+        <QuickAction title="Invoices" icon={<FileText className="h-5 w-5" />} to="/receptionist/invoices" />
       </div>
     </DashboardLayout>
   );
 };
 
 export const ReceptionistProfile = () => (
-  <DashboardLayout navItems={navItems} title="Profile">
+  <DashboardLayout navItems={receptionistNavItems} title="Profile">
     <ProfileForm />
   </DashboardLayout>
 );

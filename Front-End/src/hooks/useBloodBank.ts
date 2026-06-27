@@ -21,7 +21,6 @@ export const useBloodUnits = () =>
   useQuery({
     queryKey: [BLOOD_UNITS_KEY],
     queryFn: bloodBankService.getAllUnits,
-    refetchInterval: 30_000,
   });
 
 export const useAddBloodUnit = () => {
@@ -47,14 +46,12 @@ export const useBloodRequests = () =>
   useQuery({
     queryKey: [BLOOD_REQUESTS_KEY, 'all'],
     queryFn: bloodBankService.getAllRequests,
-    refetchInterval: 15_000,
   });
 
 export const usePendingBloodRequests = () =>
   useQuery({
     queryKey: [BLOOD_REQUESTS_KEY, 'pending'],
     queryFn: bloodBankService.getPendingRequests,
-    refetchInterval: 10_000,
   });
 
 export const useBloodRequestsByPatient = (patientId: number | string | undefined) =>

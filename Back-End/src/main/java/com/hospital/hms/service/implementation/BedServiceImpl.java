@@ -11,6 +11,7 @@ import com.hospital.hms.mapper.BedMapper;
 import com.hospital.hms.repository.BedRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.service.BedService;
+import com.hospital.hms.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -22,6 +23,7 @@ public class BedServiceImpl implements BedService {
 
     private final BedRepository bedRepository;
     private final PatientRepository patientRepository;
+    private final InvoiceService invoiceService;
 
     @Override
     public List<BedDTO> getAllBeds() {
@@ -76,6 +78,9 @@ public class BedServiceImpl implements BedService {
 
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
+
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
 
         if (bed.getStatus() == BedStatus.OCCUPIED) {
             throw new RuntimeException("Bed is already occupied");

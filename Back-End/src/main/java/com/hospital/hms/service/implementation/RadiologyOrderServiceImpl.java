@@ -130,6 +130,9 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
                 .orElseThrow(() -> new UserNotFoundException(
                         "Doctor not found with id: " + dto.getDoctorId()));
 
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
+
         RadiologyOrder order = RadiologyOrderMapper.mapToEntity(dto);
         order.setPatient(patient);
         order.setPatientName(patient.getName());
@@ -230,8 +233,17 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
             order.setStatus(RadiologyOrderStatus.IN_PROGRESS);
         }
         order.setUpdatedAt(LocalDateTime.now());
+        RadiologyOrder saved = radiologyOrderRepository.save(order);
 
-        return RadiologyOrderMapper.mapToDto(radiologyOrderRepository.save(order));
+        notify(tech.getId(), "Radiology Order Assigned",
+                "You have been assigned a " + order.getOrderType() + " scan for patient " + order.getPatientName() + ".",
+                NotificationType.RADIOLOGY_ORDER_CREATED, "/technician/requests");
+
+        notify(order.getDoctor().getId(), "Radiology Order Assigned",
+                "The " + order.getOrderType() + " scan for patient " + order.getPatientName() + " has been assigned to a technician.",
+                NotificationType.RADIOLOGY_ORDER_CREATED, "/doctor/tests");
+
+        return RadiologyOrderMapper.mapToDto(saved);
     }
 
     @Override
@@ -256,8 +268,18 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
         order.setScheduledAt(scheduledDateTime);
         order.setStatus(RadiologyOrderStatus.SCHEDULED);
         order.setUpdatedAt(LocalDateTime.now());
+        RadiologyOrder saved = radiologyOrderRepository.save(order);
 
-        return RadiologyOrderMapper.mapToDto(radiologyOrderRepository.save(order));
+        notify(order.getPatient().getId(), "Radiology Scan Scheduled",
+                "Your " + order.getOrderType() + " scan has been scheduled for " + scheduledAt + ".",
+                NotificationType.RADIOLOGY_ORDER_CREATED, "/patient/history");
+
+        notify(order.getDoctor().getId(), "Radiology Scan Scheduled",
+                "The " + order.getOrderType() + " scan for patient " + order.getPatientName()
+                        + " has been scheduled for " + scheduledAt + ".",
+                NotificationType.RADIOLOGY_ORDER_CREATED, "/doctor/tests");
+
+        return RadiologyOrderMapper.mapToDto(saved);
     }
 
     @Override

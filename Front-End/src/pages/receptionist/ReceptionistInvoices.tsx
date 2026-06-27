@@ -1,66 +1,125 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
-import { useInvoices, useInvoicesByStatus } from '@/hooks/useInvoices';
+import { useInvoices, useInvoicesByStatus, useCreateInvoice, useCancelInvoice } from '@/hooks/useInvoices';
+import { usePatients } from '@/hooks/usePatients';
 import { InvoiceDto } from '@/services/invoiceService';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
-import { LayoutDashboard, FileText, CreditCard, User, Bell, Eye } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plus, Eye } from 'lucide-react';import { useLocation } from 'react-router-dom';
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
-const navItems = [
-  { label: 'Dashboard',     path: '/accountant',               icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Invoices',      path: '/accountant/invoices',      icon: <FileText className="h-5 w-5" /> },
-  { label: 'Payments',      path: '/accountant/payments',      icon: <CreditCard className="h-5 w-5" /> },
-  { label: 'Notifications', path: '/accountant/notifications', icon: <Bell className="h-5 w-5" /> },
-  { label: 'Profile',       path: '/accountant/profile',       icon: <User className="h-5 w-5" /> },
-];
-
-const AccountantInvoices = () => {
+const ReceptionistInvoices = () => {
+  const location = useLocation();
   const { data: allPage, isLoading } = useInvoices();
   const { data: pending = [] }       = useInvoicesByStatus('PENDING');
   const { data: partial = [] }       = useInvoicesByStatus('PARTIAL');
   const { data: paid = [] }          = useInvoicesByStatus('PAID');
+  const { data: patients = [] }      = usePatients();
+  const createInvoice = useCreateInvoice();
+  const cancelInvoice = useCancelInvoice();
 
   const [selectedInvoice, setSelectedInvoice] = useState<InvoiceDto | null>(null);
   const [detailOpen, setDetailOpen]           = useState(false);
+  const [createOpen, setCreateOpen]           = useState(false);
+
+  const [newPatientId, setNewPatientId] = useState('');
+  const [newNotes, setNewNotes]         = useState('');
+
+  // Auto-open create dialog when redirected from patient registration
+  useEffect(() => {
+    const state = location.state as { newPatientId?: string; newPatientName?: string } | null;
+    if (state?.newPatientId) {
+      setNewPatientId(state.newPatientId);
+      setCreateOpen(true);
+      // Clear state so refreshing doesn't re-open
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
+
+  const handleCreate = async () => {
+    if (!newPatientId) { toast.error('Select a patient'); return; }
+    try {
+      await createInvoice.mutateAsync({
+        patientId: Number(newPatientId),
+        notes: newNotes,
+      });
+      toast.success('Invoice created');
+      setCreateOpen(false);
+      setNewPatientId('');
+      setNewNotes('');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to create invoice');
+    }
+  };
+
+  const handleCancel = async (inv: InvoiceDto) => {
+    try {
+      await cancelInvoice.mutateAsync(inv.id);
+      toast.info('Invoice cancelled');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to cancel invoice');
+    }
+  };
 
   const unpaid = [...pending, ...partial];
-
-  const openDetail = (i: InvoiceDto) => {
-    const all = [...unpaid, ...paid, ...(allPage?.content ?? [])];
-    const original = all.find(x => String(x.id) === String(i.id));
-    if (original) { setSelectedInvoice(original); setDetailOpen(true); }
-  };
 
   const invoiceCols = [
     { key: 'invoiceNumber', header: 'Invoice #' },
     { key: 'patientName',   header: 'Patient' },
-    { key: 'createdAt',     header: 'Date',    render: (i: InvoiceDto) => i.createdAt?.split('T')[0] },
+    { key: 'createdAt',     header: 'Date', render: (i: InvoiceDto) => i.createdAt?.split('T')[0] },
     { key: 'totalAmount',   header: 'Total',   render: (i: InvoiceDto) => `$${i.totalAmount?.toFixed(2)}` },
     { key: 'paidAmount',    header: 'Paid',    render: (i: InvoiceDto) => `$${i.paidAmount?.toFixed(2)}` },
     { key: 'balance',       header: 'Balance', render: (i: InvoiceDto) => (
       <span className="font-semibold text-destructive">${i.balance?.toFixed(2)}</span>
     )},
-    { key: 'status',  header: 'Status',  render: (i: InvoiceDto) => (
+    { key: 'status', header: 'Status', render: (i: InvoiceDto) => (
       <StatusBadge status={i.status?.toLowerCase() as never} />
     )},
-    { key: 'actions', header: 'Actions', render: (i: InvoiceDto) => (
-      <Button variant="ghost" size="sm" onClick={() => openDetail(i)}>
-        <Eye className="h-4 w-4" />
-      </Button>
-    )},
+    { key: 'actions', header: 'Actions', render: (i: InvoiceDto) => {
+      const allInvoices = [...unpaid, ...paid, ...(allPage?.content ?? [])];
+      const original = allInvoices.find(x => String(x.id) === String(i.id));
+      return (
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" onClick={() => {
+            if (original) { setSelectedInvoice(original); setDetailOpen(true); }
+          }}>
+            <Eye className="h-4 w-4" />
+          </Button>
+          {i.status?.toUpperCase() !== 'PAID' && i.status?.toUpperCase() !== 'CANCELLED' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive"
+              onClick={() => { if (original) handleCancel(original); }}
+            >
+              ✕
+            </Button>
+          )}
+        </div>
+      );
+    }},
   ];
 
   return (
-    <DashboardLayout navItems={navItems} title="Invoices">
+    <DashboardLayout navItems={receptionistNavItems} title="Invoices">
       <PageHeader
-        title="Invoices"
-        description="View all patient invoice transactions"
+        title="Invoice Management"
+        description="Create and manage patient invoices"
+        action={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />New Invoice
+          </Button>
+        }
       />
 
       {isLoading && (
@@ -109,7 +168,40 @@ const AccountantInvoices = () => {
         </Tabs>
       )}
 
-      {/* Invoice Detail — read-only */}
+      {/* ── Create Invoice Dialog ─────────────────────────────────── */}
+      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Create New Invoice</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Patient *</Label>
+              <Select value={newPatientId} onValueChange={setNewPatientId}>
+                <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+                <SelectContent>
+                  {patients.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name} ({p.nationalId})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Notes</Label>
+              <Input
+                value={newNotes}
+                onChange={(e) => setNewNotes(e.target.value)}
+                placeholder="Optional notes"
+              />
+            </div>
+            <Button onClick={handleCreate} className="w-full" disabled={createInvoice.isPending}>
+              {createInvoice.isPending ? 'Creating...' : 'Create Invoice'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Invoice Detail Dialog ─────────────────────────────────── */}
       <Dialog open={detailOpen} onOpenChange={setDetailOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -131,12 +223,6 @@ const AccountantInvoices = () => {
                   <p className="text-muted-foreground">Date</p>
                   <p className="font-medium">{selectedInvoice.createdAt?.split('T')[0]}</p>
                 </div>
-                {selectedInvoice.notes && (
-                  <div>
-                    <p className="text-muted-foreground">Notes</p>
-                    <p className="font-medium">{selectedInvoice.notes}</p>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -154,7 +240,7 @@ const AccountantInvoices = () => {
                     </div>
                   ))}
                   {(!selectedInvoice.items || selectedInvoice.items.length === 0) && (
-                    <p className="text-sm text-muted-foreground text-center py-2">No items</p>
+                    <p className="text-sm text-muted-foreground text-center py-2">No items yet</p>
                   )}
                 </div>
               </div>
@@ -177,8 +263,9 @@ const AccountantInvoices = () => {
           )}
         </DialogContent>
       </Dialog>
+
     </DashboardLayout>
   );
 };
 
-export default AccountantInvoices;
+export default ReceptionistInvoices;

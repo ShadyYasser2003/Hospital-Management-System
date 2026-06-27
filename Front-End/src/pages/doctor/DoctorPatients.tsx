@@ -4,7 +4,8 @@ import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { doctorNavItems } from './DoctorDashboard';
-import { usePatients, useUpdatePatient } from '@/hooks/usePatients';
+import { useAuth } from '@/contexts/AuthContext';
+import { useDoctorPatients, useUpdatePatient } from '@/hooks/usePatients';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
@@ -18,7 +19,8 @@ import { Search, Edit, Eye, User, Heart, Thermometer, Activity, AlertCircle } fr
 import { PatientDto } from '@/services/patientService';
 
 const DoctorPatients = () => {
-  const { data: patients = [], isLoading, error } = usePatients();
+  const { user } = useAuth();
+  const { data: patients = [], isLoading, error } = useDoctorPatients(user?.id);
   const updatePatient = useUpdatePatient();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<PatientDto | null>(null);

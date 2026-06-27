@@ -20,20 +20,16 @@ export const useRadiologyOrdersByTechnician = (technicianId: number | string | u
     queryKey: [RADIOLOGY_KEY, 'technician', technicianId],
     queryFn: () => radiologyService.getByTechnician(technicianId!),
     enabled: !!technicianId,
-    refetchInterval: 15_000,
-    staleTime: 5_000,
   });
 
 export const useRadiologyOrdersByStatus = (status: string) =>
   useQuery({
     queryKey: [RADIOLOGY_KEY, 'status', status],
     queryFn: () => radiologyService.getByStatus(status),
-    refetchInterval: 10_000,
-    staleTime: 5_000,
   });
 
 export const useCriticalRadiologyOrders = () =>
-  useQuery({ queryKey: [RADIOLOGY_KEY, 'critical'], queryFn: radiologyService.getCritical, refetchInterval: 30_000 });
+  useQuery({ queryKey: [RADIOLOGY_KEY, 'critical'], queryFn: radiologyService.getCritical });
 
 const invalidateRad = (qc: ReturnType<typeof useQueryClient>) =>
   qc.invalidateQueries({ queryKey: [RADIOLOGY_KEY] });

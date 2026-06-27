@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import patientService, { CreatePatientPayload, UpdatePatientPayload } from '@/services/patientService';
+import doctorService from '@/services/doctorService';
 
 export const PATIENTS_KEY = 'patients';
 
@@ -14,6 +15,13 @@ export const usePatient = (id: number | string | undefined) =>
     queryKey: [PATIENTS_KEY, id],
     queryFn: () => patientService.getById(id!),
     enabled: !!id,
+  });
+
+export const useDoctorPatients = (doctorId: number | string | undefined) =>
+  useQuery({
+    queryKey: [PATIENTS_KEY, 'doctor', doctorId],
+    queryFn: () => doctorService.getPatients(doctorId!),
+    enabled: !!doctorId,
   });
 
 export const useCreatePatient = () => {

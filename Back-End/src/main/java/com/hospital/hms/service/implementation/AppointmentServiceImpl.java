@@ -15,6 +15,7 @@ import com.hospital.hms.repository.AppointmentRepository;
 import com.hospital.hms.repository.DoctorRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.service.AppointmentService;
+import com.hospital.hms.service.InvoiceService;
 import com.hospital.hms.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,10 +29,13 @@ import java.util.List;
 @Slf4j
 public class AppointmentServiceImpl implements AppointmentService {
 
+    private static final double CONSULTATION_FEE = 10.0;
+
     private final AppointmentRepository appointmentRepository;
     private final PatientRepository     patientRepository;
     private final DoctorRepository      doctorRepository;
     private final NotificationService   notificationService;
+    private final InvoiceService        invoiceService;
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -86,6 +90,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
         Doctor doctor = doctorRepository.findById(dto.getDoctorId())
                 .orElseThrow(() -> new UserNotFoundException("Doctor not found"));
+
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
 
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
@@ -158,6 +165,19 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .orElseThrow(() -> new AppointmentNotFoundException("Appointment not found"));
         appointment.setStatus(AppointmentStatus.CONFIRMED);
         Appointment updated = appointmentRepository.save(appointment);
+
+        // Add consultation fee to the patient's open invoice
+        try {
+            String desc = "Consultation — Dr. " + updated.getDoctorName()
+                    + " (" + updated.getAppointmentDate() + ")";
+            invoiceService.addConsultationCharge(
+                    updated.getPatient().getId(),
+                    updated.getId(),
+                    desc,
+                    CONSULTATION_FEE);
+        } catch (Exception e) {
+            log.warn("Consultation charge skipped for appointment {}: {}", id, e.getMessage());
+        }
 
         notify(updated.getPatient().getId(),
                 "Appointment Confirmed",

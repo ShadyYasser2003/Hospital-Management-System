@@ -36,6 +36,8 @@ const typeColor = (type: string): string => {
       return 'bg-warning';
     case 'INVOICE_CREATED':
       return 'bg-accent';
+    case 'CHARGE_ADDED':
+      return 'bg-orange-500';
     case 'BLOOD_REQUEST_CREATED':
     case 'BLOOD_REQUEST_RESERVED':
     case 'BLOOD_REQUEST_COMPLETED':

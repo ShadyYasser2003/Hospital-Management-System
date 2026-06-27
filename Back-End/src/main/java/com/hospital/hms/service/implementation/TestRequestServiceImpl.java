@@ -60,6 +60,9 @@ public class TestRequestServiceImpl implements TestRequestService {
         Doctor doctor = doctorRepository.findById(dto.getDoctorId())
                 .orElseThrow(() -> new UserNotFoundException("Doctor not found: " + dto.getDoctorId()));
 
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
+
         TestRequest tr = TestRequest.builder()
                 .testType(dto.getTestType()).description(dto.getDescription())
                 .priority(dto.getPriority() != null ? dto.getPriority().toUpperCase() : "NORMAL")
@@ -142,6 +145,11 @@ public class TestRequestServiceImpl implements TestRequestService {
                 "You have been assigned a " + tr.getTestType() + " test for " + tr.getPatient().getName(),
                 NotificationType.TEST_ASSIGNED, "/technician/requests");
 
+        notify(tr.getDoctor().getId(), "Test Assigned to Technician",
+                "The " + tr.getTestType() + " test for patient " + tr.getPatient().getName()
+                        + " has been assigned to a technician.",
+                NotificationType.TEST_ASSIGNED, "/doctor/tests/" + saved.getId());
+
         return TestRequestMapper.mapToDto(saved);
     }
 
@@ -213,7 +221,17 @@ public class TestRequestServiceImpl implements TestRequestService {
     public TestRequestDTO cancel(Long id) {
         TestRequest tr = getEntity(id);
         tr.setStatus(TestRequestStatus.CANCELLED);
-        return TestRequestMapper.mapToDto(testRequestRepository.save(tr));
+        TestRequest saved = testRequestRepository.save(tr);
+
+        notify(tr.getPatient().getId(), "Test Request Cancelled",
+                "Your " + tr.getTestType() + " test request has been cancelled.",
+                NotificationType.TEST_COMPLETED, "/patient/tests/" + saved.getId());
+
+        notify(tr.getDoctor().getId(), "Test Request Cancelled",
+                "The " + tr.getTestType() + " test for patient " + tr.getPatient().getName() + " has been cancelled.",
+                NotificationType.TEST_COMPLETED, "/doctor/tests/" + saved.getId());
+
+        return TestRequestMapper.mapToDto(saved);
     }
 
     @Override @Transactional

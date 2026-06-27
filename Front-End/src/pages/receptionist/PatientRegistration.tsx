@@ -10,17 +10,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, LayoutDashboard, UserPlus, Search, Calendar, LogOut, User } from 'lucide-react';
+import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useCreatePatient } from '@/hooks/usePatients';
-
-const navItems = [
-  { label: 'Dashboard', path: '/receptionist', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { label: 'Register Patient', path: '/receptionist/register', icon: <UserPlus className="h-5 w-5" /> },
-  { label: 'Search Patient', path: '/receptionist/search', icon: <Search className="h-5 w-5" /> },
-  { label: 'Appointments', path: '/receptionist/appointments', icon: <Calendar className="h-5 w-5" /> },
-  { label: 'Check Out', path: '/receptionist/checkout', icon: <LogOut className="h-5 w-5" /> },
-  { label: 'Profile', path: '/receptionist/profile', icon: <User className="h-5 w-5" /> },
-];
+import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
 const PatientRegistration = () => {
   const navigate = useNavigate();
@@ -38,8 +30,8 @@ const PatientRegistration = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.username.trim()) { toast.error('Username is required'); return; }
-    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      toast.error('Username can only contain letters, numbers, and underscores'); return;
+    if (/\s/.test(formData.username)) {
+      toast.error('Username cannot contain spaces'); return;
     }
     if (!formData.password || formData.password.length < 6) {
       toast.error('Password must be at least 6 characters'); return;
@@ -51,7 +43,7 @@ const PatientRegistration = () => {
     }
 
     try {
-      await createPatient.mutateAsync({
+      const result = await createPatient.mutateAsync({
         username: formData.username.trim(),
         name: formData.name,
         email: formData.email,
@@ -69,14 +61,14 @@ const PatientRegistration = () => {
         medicalHistory: formData.medicalHistory || undefined,
       });
       toast.success('Patient registered successfully!');
-      navigate('/receptionist/search');
+      navigate('/receptionist/invoices', { state: { newPatientId: String(result.id), newPatientName: formData.name } });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to register patient');
     }
   };
 
   return (
-    <DashboardLayout navItems={navItems} title="Patient Registration">
+    <DashboardLayout navItems={receptionistNavItems} title="Patient Registration">
       <PageHeader title="Register New Patient" description="Create a new patient record and account" />
 
       <form onSubmit={handleSubmit} className="max-w-4xl">
@@ -85,7 +77,7 @@ const PatientRegistration = () => {
             <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
             <CardContent className="grid sm:grid-cols-2 gap-4">
               <div><Label>Full Name *</Label><Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required /></div>
-              <div><Label>Username *</Label><Input value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="Letters, numbers, underscores only" required /></div>
+              <div><Label>Username *</Label><Input value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="e.g. john.doe or john_doe" required /></div>
               <div><Label>National ID *</Label><Input value={formData.nationalId} onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })} required /></div>
               <div><Label>Date of Birth *</Label><Input type="date" value={formData.dateOfBirth} max={today} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} required /></div>
               <div>

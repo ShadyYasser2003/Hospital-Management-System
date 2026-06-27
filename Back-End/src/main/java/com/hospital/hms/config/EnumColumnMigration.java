@@ -30,6 +30,60 @@ public class EnumColumnMigration {
         migrateColumn("doctors",      "employment_status");
         migrateColumn("nurses",       "employment_status");
         migrateColumn("receptionists","employment_status");
+        fixInvoiceStatusColumn();
+        ensurePatientAdmissionColumns();
+    }
+
+    /**
+     * Ensures admission_date, discharge_date, bed_charge_per_day exist in patients table.
+     * Hibernate ddl-auto=update sometimes fails to add columns due to inheritance table structure.
+     */
+    private void ensurePatientAdmissionColumns() {
+        addColumnIfMissing("patients", "admission_date",    "DATETIME NULL");
+        addColumnIfMissing("patients", "discharge_date",    "DATETIME NULL");
+        addColumnIfMissing("patients", "bed_charge_per_day","DOUBLE NULL");
+    }
+
+    private void addColumnIfMissing(String table, String column, String definition) {
+        try {
+            Integer count = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() " +
+                "AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                Integer.class, table, column
+            );
+            if (count == null || count == 0) {
+                log.warn("Column {}.{} missing — adding it now", table, column);
+                jdbc.execute("ALTER TABLE `" + table + "` ADD COLUMN `" + column + "` " + definition);
+                log.info("Added {}.{} successfully", table, column);
+            }
+        } catch (Exception e) {
+            log.error("Failed to add {}.{}: {}", table, column, e.getMessage());
+        }
+    }
+
+    /**
+     * Ensures the invoices.status column is VARCHAR(20) and includes PARTIAL.
+     * MySQL ENUM columns reject unknown values — we convert to VARCHAR to be safe.
+     */
+    private void fixInvoiceStatusColumn() {
+        try {
+            String dataType = jdbc.queryForObject(
+                "SELECT DATA_TYPE FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() " +
+                "AND TABLE_NAME = 'invoices' AND COLUMN_NAME = 'status'",
+                String.class
+            );
+            if ("enum".equalsIgnoreCase(dataType)) {
+                log.warn("invoices.status is ENUM — converting to VARCHAR(20) to support PARTIAL status");
+                jdbc.execute("ALTER TABLE `invoices` MODIFY COLUMN `status` VARCHAR(20) NOT NULL DEFAULT 'PENDING'");
+                log.info("invoices.status converted to VARCHAR(20) successfully");
+            } else {
+                log.debug("invoices.status is {} — no migration needed", dataType);
+            }
+        } catch (Exception e) {
+            log.error("Failed to fix invoices.status column: {}", e.getMessage());
+        }
     }
 
     private void migrateColumn(String table, String column) {

@@ -16,6 +16,7 @@ import com.hospital.hms.repository.DoctorRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.service.BloodBankService;
 import com.hospital.hms.service.EmailService;
+import com.hospital.hms.service.InvoiceService;
 import com.hospital.hms.service.NotificationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,6 +89,7 @@ public class BloodBankServiceImpl implements BloodBankService {
     private final DoctorRepository       doctorRepository;
     private final EmailService           emailService;
     private final NotificationService    notificationService;
+    private final InvoiceService         invoiceService;
 
     @Value("${hospital.name:Our Hospital}")
     private String hospitalName;
@@ -212,6 +214,9 @@ public class BloodBankServiceImpl implements BloodBankService {
         Doctor doctor = doctorRepository.findById(dto.getRequestedById())
                 .orElseThrow(() -> new UserNotFoundException(
                         "Doctor not found with id: " + dto.getRequestedById()));
+
+        // Guard: patient must have an open invoice before any operation
+        invoiceService.requireOpenInvoice(patient.getId());
 
         BloodType bloodType = BloodUnitMapper.parseBloodType(dto.getBloodType());
 

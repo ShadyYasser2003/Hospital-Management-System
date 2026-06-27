@@ -20,20 +20,16 @@ export const useLabTestsByTechnician = (technicianId: number | string | undefine
     queryKey: [LAB_TESTS_KEY, 'technician', technicianId],
     queryFn: () => labTestService.getByTechnician(technicianId!),
     enabled: !!technicianId,
-    refetchInterval: 15_000,
-    staleTime: 5_000,
   });
 
 export const useLabTestsByStatus = (status: string) =>
   useQuery({
     queryKey: [LAB_TESTS_KEY, 'status', status],
     queryFn: () => labTestService.getByStatus(status),
-    refetchInterval: 10_000,
-    staleTime: 5_000,
   });
 
 export const useCriticalLabTests = () =>
-  useQuery({ queryKey: [LAB_TESTS_KEY, 'critical'], queryFn: labTestService.getCritical, refetchInterval: 30_000 });
+  useQuery({ queryKey: [LAB_TESTS_KEY, 'critical'], queryFn: labTestService.getCritical });
 
 const invalidateLab = (qc: ReturnType<typeof useQueryClient>) =>
   qc.invalidateQueries({ queryKey: [LAB_TESTS_KEY] });

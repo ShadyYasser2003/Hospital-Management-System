@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useQuery } from '@tanstack/react-query';
+import departmentService from '@/services/departmentService';
 import {
   Building2,
   Stethoscope,
@@ -57,19 +59,6 @@ const services = [
   },
 ];
 
-const departments = [
-  'Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
-  'Emergency', 'Radiology', 'Laboratory', 'Pharmacy',
-  'Oncology', 'Dermatology',
-];
-
-const stats = [
-  { value: '500+', label: 'Healthcare Staff' },
-  { value: '50K+', label: 'Patients Served' },
-  { value: '20+',  label: 'Departments' },
-  { value: '24/7', label: 'Emergency Care' },
-];
-
 const whyUs = [
   'Board-certified specialists across all major disciplines',
   'Advanced diagnostic & imaging technology',
@@ -80,6 +69,26 @@ const whyUs = [
 
 const HomePage = () => {
   const { theme, toggleTheme } = useTheme();
+
+  // Real department names from public API (no auth required)
+  const { data: depts = [] } = useQuery({
+    queryKey: ['departments-public'],
+    queryFn: departmentService.getAll,
+    retry: false,
+  });
+
+  const stats = [
+    { value: '200+', label: 'Healthcare Staff' },
+    { value: '10K+', label: 'Patients Served'  },
+    { value: depts.length > 0 ? `${depts.length}+` : '20+', label: 'Departments' },
+    { value: '24/7', label: 'Emergency Care'   },
+  ];
+
+  const departmentNames = depts.length > 0
+    ? depts.map(d => d.name)
+    : ['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
+       'Emergency', 'Radiology', 'Laboratory', 'Pharmacy',
+       'Oncology', 'Dermatology'];
   return (
     <div className="min-h-screen bg-background text-foreground">
 
@@ -269,7 +278,7 @@ const HomePage = () => {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-3">
-            {departments.map((dept) => (
+            {departmentNames.map((dept) => (
               <div
                 key={dept}
                 className="bg-card border border-border rounded-full px-6 py-2.5 text-sm font-medium hover:border-primary hover:text-primary hover:bg-primary/5 transition-all cursor-default"
