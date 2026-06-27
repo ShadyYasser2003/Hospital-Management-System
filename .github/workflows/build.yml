@@ -22,7 +22,7 @@ env:
   AWS_REGION: us-east-1
   BACKEND_REPO: hms/backend
   FRONTEND_REPO: hms/frontend
-
+ 
 jobs:
   # ── Version Calculation ────────────────────────────────────────────────────
   version:
@@ -75,7 +75,7 @@ jobs:
         run: mvn -B dependency:go-offline
 
       - name: Scan Frontend
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: Front-End/HMS_Front
@@ -85,7 +85,7 @@ jobs:
           format: table
  
       - name: Scan Backend
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: Back-End/Back-End/hospital-management-system-main
