@@ -71,15 +71,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Trivy filesystem scan
+      - name: Trivy filesystem scan (skip Java deps — scanned in image step)
         uses: aquasecurity/trivy-action@master
         with:
           scan-type: fs
           scan-ref: .
-          scanners: vuln,secret
-          severity: CRITICAL
+          scanners: secret
           exit-code: 0
           format: table
+        env:
+          TRIVY_SKIP_DIRS: "Back-End/Back-End/hospital-management-system-main,node_modules,.terraform"
 
       - name: Gitleaks
         uses: gitleaks/gitleaks-action@v2
