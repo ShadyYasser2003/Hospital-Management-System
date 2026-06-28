@@ -11,7 +11,7 @@
  * reverse-proxy) or to the full URL of a CORS-enabled gateway.
  */
 
-const CHATBOT_BASE_URL = import.meta.env.VITE_CHATBOT_BASE_URL ?? '';
+const CHATBOT_BASE_URL = import.meta.env.VITE_CHATBOT_BASE_URL || 'https://1poeaxsg2f.execute-api.us-east-1.amazonaws.com';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -53,7 +53,7 @@ const chatbotService = {
     let response: Response;
 
     try {
-      response = await fetch(`${CHATBOT_BASE_URL}/chatbot-api/api/chat`, {
+      response = await fetch(`${CHATBOT_BASE_URL}/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: trimmed } satisfies ChatbotRequest),
