@@ -7,6 +7,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { DataProvider } from "@/contexts/DataContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import ProtectedRoute from "@/components/layout/ProtectedRoute";
+import ChatWidget from "@/components/shared/ChatWidget";
 
 // Public pages
 import HomePage from "./pages/HomePage";
@@ -157,6 +158,7 @@ const App = () => (
               {/* Fallback */}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
+            <ChatWidget />
           </BrowserRouter>
         </TooltipProvider>
       </DataProvider>
