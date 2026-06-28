@@ -12,6 +12,8 @@ on:
     paths-ignore:
       - "docs/**"
       - "*.md"
+      - "ai_chatbot/**"
+      - ".github/workflows/build-chatbot.yml"
 
 permissions:
   id-token: write

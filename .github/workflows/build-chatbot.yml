@@ -1,0 +1,94 @@
+# =============================================================================
+#  Build AI Chatbot Image — Only when ai_chatbot/ code changes
+#  Builds the custom CUDA container and pushes to ECR for SageMaker.
+# =============================================================================
+
+name: Build Chatbot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ai_chatbot/**"
+      - ".github/workflows/build-chatbot.yml"
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REPO: hms/chatbot
+
+jobs:
+  # ── Check if chatbot code changed ──────────────────────────────────────────
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      chatbot_changed: ${{ steps.filter.outputs.chatbot }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for chatbot changes
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            chatbot:
+              - 'ai_chatbot/**'
+
+  # ── Build and push (only if changed) ───────────────────────────────────────
+  build:
+    name: Build Chatbot Image
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.chatbot_changed == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to ECR
+        id: ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Calculate version
+        id: version
+        run: |
+          SHA=$(git rev-parse --short HEAD)
+          COUNT=$(git rev-list --count HEAD -- ai_chatbot/)
+          VERSION="v1.0.${COUNT}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "📦 Chatbot version: $VERSION ($SHA)"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push chatbot image
+        uses: docker/build-push-action@v6
+        with:
+          context: ai_chatbot
+          file: ai_chatbot/Dockerfile.sagemaker
+          push: true
+          tags: |
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.version.outputs.version }}
+            ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.version.outputs.sha }}
+          cache-from: type=gha,scope=chatbot
+          cache-to: type=gha,scope=chatbot,mode=max
+          provenance: false
+
+      - name: Log success
+        run: |
+          echo "══════════════════════════════════════════════════════"
+          echo "✅ Chatbot image pushed to ECR"
+          echo "   Image: ${{ steps.ecr.outputs.registry }}/${{ env.ECR_REPO }}:${{ steps.version.outputs.version }}"
+          echo "   SHA:   ${{ steps.version.outputs.sha }}"
+          echo ""
+          echo "   Next: Update SageMaker endpoint with this image"
+          echo "══════════════════════════════════════════════════════"
