@@ -3,6 +3,7 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.PharmacistDto;
 import com.hospital.hms.service.PharmacistService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,7 +26,7 @@ public class PharmacistController {
         return ResponseEntity.ok(service.getAllPharmacists());
     }
     @PutMapping("/{id}")
-    public ResponseEntity<PharmacistDto> updatePharmacist(@PathVariable Long id,@RequestBody PharmacistDto pharmacistDto){
+    public ResponseEntity<PharmacistDto> updatePharmacist(@PathVariable Long id, @Valid @RequestBody PharmacistDto pharmacistDto){
         return ResponseEntity.ok(service.updatePharmacist(id, pharmacistDto));
     }
     @DeleteMapping("/{id}")
@@ -45,7 +46,7 @@ public class PharmacistController {
         return ResponseEntity.ok(service.findPharmacistsByDepartment(departmentId));
     }
     @PostMapping
-    public ResponseEntity<PharmacistDto> createPharmacist(@RequestBody PharmacistDto pharmacistDto){
+    public ResponseEntity<PharmacistDto> createPharmacist(@Valid @RequestBody PharmacistDto pharmacistDto){
         return ResponseEntity.ok(service.createPharmacist(pharmacistDto));
     }
 }

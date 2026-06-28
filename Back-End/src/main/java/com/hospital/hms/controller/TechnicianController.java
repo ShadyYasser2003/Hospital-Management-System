@@ -2,6 +2,7 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.TechnicianDto;
 import com.hospital.hms.service.TechnicianService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +60,7 @@ public class TechnicianController {
 
     @PostMapping
     public ResponseEntity<TechnicianDto> createTechnician(
-            @RequestBody TechnicianDto technicianDto) {
+            @Valid @RequestBody TechnicianDto technicianDto) {
         return new ResponseEntity<>(
                 technicianService.createTechnician(technicianDto), HttpStatus.CREATED);
     }
@@ -67,7 +68,7 @@ public class TechnicianController {
     @PutMapping("/{id}")
     public ResponseEntity<TechnicianDto> updateTechnician(
             @PathVariable Long id,
-            @RequestBody TechnicianDto technicianDto) {
+            @Valid @RequestBody TechnicianDto technicianDto) {
         return ResponseEntity.ok(technicianService.updateTechnician(id, technicianDto));
     }
 

@@ -5,6 +5,7 @@ import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { doctorNavItems } from './DoctorDashboard';
 import { usePatients, useUpdatePatient } from '@/hooks/usePatients';
+import { useBeds, useAssignBedPatient } from '@/hooks/useBeds';
 import { PatientDto } from '@/services/patientService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,7 +17,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { Plus, Bed, LogOut, CalendarDays } from 'lucide-react';
+import { Plus, Bed, LogOut, CalendarDays, BedDouble } from 'lucide-react';
 import api from '@/lib/api';
 
 /** Fixed system-wide bed charge — $20 per day */
@@ -35,13 +36,19 @@ async function postBedCharge(payload: {
 const DoctorAdmissions = () => {
   const { data: patients = [], isLoading } = usePatients();
   const updatePatient = useUpdatePatient();
+  const { data: beds = [] } = useBeds();
+  const assignBed = useAssignBedPatient();
+
+  const availableBeds = beds.filter(b => b.status?.toUpperCase() === 'AVAILABLE');
 
   // ── Admit dialog ──────────────────────────────────────────────────────────
   const [admitOpen, setAdmitOpen]               = useState(false);
   const [selectedPatientId, setSelectedPatientId] = useState('');
+  const [selectedBedId, setSelectedBedId]       = useState('');
   const [reason, setReason]                     = useState('');
   const [priority, setPriority]                 = useState<'normal' | 'urgent' | 'emergency'>('normal');
   const [admissionDate, setAdmissionDate]       = useState(new Date().toISOString().split('T')[0]);
+  const [admitting, setAdmitting]               = useState(false);
 
   // ── Discharge dialog ──────────────────────────────────────────────────────
   const [dischargeOpen, setDischargeOpen]       = useState(false);
@@ -62,7 +69,15 @@ const DoctorAdmissions = () => {
     if (!selectedPatientId) { toast.error('Please select a patient'); return; }
     if (!reason.trim())     { toast.error('Please enter admission reason'); return; }
     if (!admissionDate)     { toast.error('Please enter admission date'); return; }
+    if (!selectedBedId)     { toast.error('Please assign a bed'); return; }
+    if (availableBeds.length === 0) { toast.error('No beds available'); return; }
+    setAdmitting(true);
     try {
+      // 1. Assign bed if selected
+      if (selectedBedId) {
+        await assignBed.mutateAsync({ bedId: Number(selectedBedId), patientId: Number(selectedPatientId) });
+      }
+      // 2. Update patient status to ADMITTED
       await updatePatient.mutateAsync({
         id: Number(selectedPatientId),
         payload: {
@@ -72,14 +87,19 @@ const DoctorAdmissions = () => {
           dischargeDate: '',
         } as never,
       });
-      toast.success('Patient admitted successfully');
+      toast.success(selectedBedId
+        ? 'Patient admitted and assigned to bed'
+        : 'Patient admitted successfully');
       setAdmitOpen(false);
       setSelectedPatientId('');
+      setSelectedBedId('');
       setReason('');
       setPriority('normal');
       setAdmissionDate(new Date().toISOString().split('T')[0]);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to admit patient');
+    } finally {
+      setAdmitting(false);
     }
   };
 
@@ -190,6 +210,27 @@ const DoctorAdmissions = () => {
                 </div>
 
                 <div>
+                  <Label className="flex items-center gap-1">
+                    <BedDouble className="h-4 w-4 text-blue-500" />
+                    Assign Bed <span className="text-destructive">*</span>
+                  </Label>
+                  {availableBeds.length === 0 ? (
+                    <p className="text-sm text-destructive mt-1">No beds available — free up a bed before admitting.</p>
+                  ) : (
+                    <Select value={selectedBedId} onValueChange={setSelectedBedId}>
+                      <SelectTrigger><SelectValue placeholder="Select bed…" /></SelectTrigger>
+                      <SelectContent>
+                        {availableBeds.map(b => (
+                          <SelectItem key={b.id} value={String(b.id)}>
+                            Bed {b.bedNumber}{b.wardName ? ` — ${b.wardName}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+
+                <div>
                   <Label>Admission Date *</Label>
                   <Input
                     type="date"
@@ -237,8 +278,8 @@ const DoctorAdmissions = () => {
 
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" onClick={() => setAdmitOpen(false)}>Cancel</Button>
-                  <Button onClick={handleAdmit} disabled={updatePatient.isPending}>
-                    {updatePatient.isPending ? 'Admitting...' : 'Admit Patient'}
+                  <Button onClick={handleAdmit} disabled={admitting || updatePatient.isPending || availableBeds.length === 0}>
+                    {admitting ? 'Admitting...' : 'Admit Patient'}
                   </Button>
                 </div>
               </div>

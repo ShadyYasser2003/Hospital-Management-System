@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
+import { useMyPatientProfile } from '@/hooks/usePatients';
 import { useLabTestsByPatient } from '@/hooks/useLabTests';
 import { useRadiologyOrdersByPatient } from '@/hooks/useRadiologyOrders';
 import { useAppointmentsByPatient } from '@/hooks/useAppointments';
@@ -27,8 +27,7 @@ const navItems = [
 
 const PatientHistory = () => {
   const { user } = useAuth();
-  const { data: patients = [] } = usePatients();
-  const patient = patients.find(p => String(p.id) === user?.id || p.nationalId === user?.nationalId);
+  const { data: patient } = useMyPatientProfile();
 
   const { data: labTests = [],    isLoading: loadingLab }   = useLabTestsByPatient(patient?.id);
   const { data: radOrders = [],   isLoading: loadingRad }   = useRadiologyOrdersByPatient(patient?.id);

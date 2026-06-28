@@ -14,4 +14,5 @@ public interface PatientService {
     public void deletePatient(Long id);
     public List<PatientDTO> searchPatients(String query);
     public List<PatientDTO> getPatientsByStatus(String status);
+    public PatientDTO getPatientByUsername(String username);
 }

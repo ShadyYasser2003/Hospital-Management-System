@@ -2,9 +2,12 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.PatientDTO;
 import com.hospital.hms.service.PatientService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -18,13 +21,29 @@ public class PatientController {
 
     @GetMapping
     public ResponseEntity<List<PatientDTO>> getAllPatients() {
-        List<PatientDTO> patients = patientService.getAllPatients();
-        return ResponseEntity.ok(patients);
+        return ResponseEntity.ok(patientService.getAllPatients());
+    }
+
+    /** Returns the profile of the currently authenticated patient */
+    @GetMapping("/me")
+    public ResponseEntity<PatientDTO> getMyProfile(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        PatientDTO patient = patientService.getPatientByUsername(userDetails.getUsername());
+        return ResponseEntity.ok(patient);
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<PatientDTO> getPatientById(@PathVariable Long id) {
+    public ResponseEntity<PatientDTO> getPatientById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        // patients can only view their own record; staff roles can view any
         PatientDTO patient = patientService.getPatientById(id);
+        String role = userDetails.getAuthorities().stream()
+                .findFirst().map(a -> a.getAuthority()).orElse("");
+        if ("ROLE_PATIENT".equals(role) &&
+            !userDetails.getUsername().equals(patient.getUsername())) {
+            return ResponseEntity.status(403).build();
+        }
         return ResponseEntity.ok(patient);
     }
 
@@ -35,7 +54,7 @@ public class PatientController {
     }
 
     @PostMapping
-    public ResponseEntity<PatientDTO> createPatient(@RequestBody PatientDTO patientDTO) {
+    public ResponseEntity<PatientDTO> createPatient(@Valid @RequestBody PatientDTO patientDTO) {
         PatientDTO createdPatient = patientService.createPatient(patientDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdPatient);
     }

@@ -91,6 +91,23 @@ public class AuthController {
         }
     }
 
+    // ─── Forgot Password ──────────────────────────────────────────────────────
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@RequestBody java.util.Map<String, String> body) {
+        String email = body.get("email");
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.badRequest().body("Email is required");
+        }
+        try {
+            userService.forgotPassword(email.trim());
+            // Always return 200 — don't reveal whether the email exists
+            return ResponseEntity.ok("If an account with that email exists, a temporary password has been sent.");
+        } catch (Exception e) {
+            // Swallow user-not-found to prevent email enumeration
+            return ResponseEntity.ok("If an account with that email exists, a temporary password has been sent.");
+        }
+    }
+
     // ─── Reset Password ───────────────────────────────────────────────────────
     @PutMapping("/{id}/reset-password")
     public ResponseEntity<String> resetPassword(

@@ -5,7 +5,9 @@ import com.hospital.hms.entity.TestRequest;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -18,4 +20,8 @@ public interface TestRequestRepository extends JpaRepository<TestRequest, Long> 
     Page<TestRequest> findByTechnicianId(Long technicianId, Pageable pageable);
     Page<TestRequest> findByPatientId(Long patientId, Pageable pageable);
     List<TestRequest> findByTechnicianIdAndStatus(Long technicianId, TestRequestStatus status);
+
+    @Modifying
+    @Transactional
+    void deleteByPatientId(Long patientId);
 }

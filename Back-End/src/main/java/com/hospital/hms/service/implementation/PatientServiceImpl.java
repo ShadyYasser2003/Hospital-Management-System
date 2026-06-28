@@ -12,14 +12,30 @@ import com.hospital.hms.exception.NationalIDAlreadyExists;
 import com.hospital.hms.exception.PatientNotFoundException;
 import com.hospital.hms.mapper.PatientMapper;
 import com.hospital.hms.repository.NurseRepository;
+import com.hospital.hms.repository.NotificationRepository;
+import com.hospital.hms.repository.RefreshTokenRepository;
+import com.hospital.hms.repository.AppointmentRepository;
+import com.hospital.hms.repository.InvoiceRepository;
+import com.hospital.hms.repository.PaymentRepository;
+import com.hospital.hms.repository.LabTestRepository;
+import com.hospital.hms.repository.RadiologyOrderRepository;
+import com.hospital.hms.repository.BloodRequestRepository;
+import com.hospital.hms.repository.BloodDonationRepository;
+import com.hospital.hms.repository.TransferRequestRepository;
+import com.hospital.hms.repository.TestRequestRepository;
+import com.hospital.hms.repository.MedicineDispensationRepository;
+import com.hospital.hms.repository.BedRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.repository.PrescriptionRepository;
+import com.hospital.hms.repository.AdminRepository;
+import com.hospital.hms.repository.ReceptionistRepository;
 import com.hospital.hms.service.NotificationService;
 import com.hospital.hms.service.PatientService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -28,22 +44,61 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class PatientServiceImpl implements PatientService {
-    private final PatientRepository patientRepository;
-    private final PasswordEncoder passwordEncoder;
-    private final PrescriptionRepository prescriptionRepository;
-    private final NurseRepository nurseRepository;
-    private final NotificationService notificationService;
+    private final PatientRepository        patientRepository;
+    private final PasswordEncoder          passwordEncoder;
+    private final PrescriptionRepository   prescriptionRepository;
+    private final NurseRepository          nurseRepository;
+    private final NotificationService      notificationService;
+    private final NotificationRepository   notificationRepository;
+    private final RefreshTokenRepository   refreshTokenRepository;
+    private final AdminRepository          adminRepository;
+    private final ReceptionistRepository   receptionistRepository;
+    private final AppointmentRepository    appointmentRepository;
+    private final InvoiceRepository        invoiceRepository;
+    private final PaymentRepository        paymentRepository;
+    private final LabTestRepository        labTestRepository;
+    private final RadiologyOrderRepository radiologyOrderRepository;
+    private final BloodRequestRepository   bloodRequestRepository;
+    private final BloodDonationRepository  bloodDonationRepository;
+    private final TransferRequestRepository transferRequestRepository;
+    private final TestRequestRepository    testRequestRepository;
+    private final MedicineDispensationRepository medicineDispensationRepository;
+    private final BedRepository            bedRepository;
 
     private void notify(Long recipientId, String title, String message,
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Patient notification skipped for user {}: {}", recipientId, e.getMessage()); }
     }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
+    }
+
+    private void notifyAllReceptionists(String title, String message, String url) {
+        try { receptionistRepository.findAll().forEach(r ->
+            notify(r.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Receptionist broadcast skipped: {}", e.getMessage()); }
+    }
     @Override
     public List<PatientDTO> getAllPatients() {
         return patientRepository.findAll()
                 .stream()
-                .map(PatientMapper::mapToPatientDto)
+                .filter(p -> {
+                    // Skip orphan rows (user exists but patients sub-table row is missing)
+                    try { return p.getId() != null && p.getPatientStatus() != null; }
+                    catch (Exception e) { return false; }
+                })
+                .map(p -> {
+                    try { return PatientMapper.mapToPatientDto(p); }
+                    catch (Exception e) {
+                        log.warn("Skipping orphan patient id={}: {}", p.getId(), e.getMessage());
+                        return null;
+                    }
+                })
+                .filter(dto -> dto != null)
                 .toList();
     }
 
@@ -90,6 +145,10 @@ public class PatientServiceImpl implements PatientService {
         patient.setPatientStatus(PatientStatus.ACTIVE);
 
         Patient saved = patientRepository.save(patient);
+
+        notifyAdmins("New Patient Registered",
+                "Patient " + patient.getName() + " (ID: " + patient.getNationalId() + ") has been registered.",
+                "/admin/users");
 
         return PatientMapper.mapToPatientDto(saved);
     }
@@ -142,6 +201,12 @@ public class PatientServiceImpl implements PatientService {
                             "You have been admitted to the hospital. Our nursing team will take care of you.",
                             NotificationType.GENERAL,
                             "/patient/history");
+                    notifyAdmins("Patient Admitted",
+                            "Patient " + patientName + " has been admitted to the hospital.",
+                            "/admin/users");
+                    notifyAllReceptionists("Patient Admitted",
+                            "Patient " + patientName + " has been admitted. Monitor their status for checkout.",
+                            "/receptionist/checkout");
                 } else if (newStatus == PatientStatus.DISCHARGED) {
                     if (patient.getDischargeDate() == null)
                         patient.setDischargeDate(LocalDateTime.now());
@@ -151,6 +216,9 @@ public class PatientServiceImpl implements PatientService {
                             "You have been discharged. Please follow your doctor's instructions.",
                             NotificationType.GENERAL,
                             "/patient/history");
+                    notifyAdmins("Patient Discharged",
+                            "Patient " + patient.getName() + " has been discharged.",
+                            "/admin/users");
                 }
             } catch (IllegalArgumentException ignored) {}
         }
@@ -198,9 +266,40 @@ public class PatientServiceImpl implements PatientService {
     }
 
     @Override
+    @Transactional
     public void deletePatient(Long id) {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new PatientNotFoundException("Patient not found"));
+
+        // ── 1. Nullify directed blood donation references (nullable FK) ────
+        bloodDonationRepository.clearTargetPatient(id);
+
+        // ── 2. Release any occupied bed ────────────────────────────────────
+        bedRepository.findByPatient(patient).forEach(bed -> {
+            bed.setPatient(null);
+            bed.setPatientName(null);
+            bed.setStatus(com.hospital.hms.Enum.BedStatus.AVAILABLE);
+            bedRepository.save(bed);
+        });
+
+        // ── 3. Delete child records (FK: patient_id → patients.patient_id) ─
+        appointmentRepository.deleteByPatient(patient);
+        bloodRequestRepository.deleteByPatient_Id(id);
+        labTestRepository.deleteByPatient_Id(id);
+        radiologyOrderRepository.deleteByPatient_Id(id);
+        transferRequestRepository.deleteByPatient_Id(id);
+        testRequestRepository.deleteByPatientId(id);
+        medicineDispensationRepository.deleteByPatient_Id(id);
+        prescriptionRepository.deleteByPatient(patient);
+        // payments must be deleted before invoices (FK: payments.patient_id + payments.invoice_id)
+        paymentRepository.deleteByPatientId(id);
+        invoiceRepository.deleteByPatientId(id);
+
+        // ── 4. Delete notifications and refresh tokens ──────────────────────
+        notificationRepository.deleteByRecipientId(id);
+        refreshTokenRepository.deleteByUser(patient);
+
+        // ── 5. Delete the patient (removes from patients + users tables) ────
         patientRepository.delete(patient);
     }
 
@@ -220,6 +319,13 @@ public class PatientServiceImpl implements PatientService {
                 .stream()
                 .map(PatientMapper::mapToPatientDto)
                 .toList();
+    }
+
+    @Override
+    public PatientDTO getPatientByUsername(String username) {
+        Patient patient = patientRepository.findByUsername(username)
+                .orElseThrow(() -> new PatientNotFoundException("Patient not found for username: " + username));
+        return PatientMapper.mapToPatientDto(patient);
     }
     }
 

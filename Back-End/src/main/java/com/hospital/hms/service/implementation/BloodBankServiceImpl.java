@@ -12,6 +12,7 @@ import com.hospital.hms.mapper.BloodRequestMapper;
 import com.hospital.hms.mapper.BloodUnitMapper;
 import com.hospital.hms.repository.BloodRequestRepository;
 import com.hospital.hms.repository.BloodUnitRepository;
+import com.hospital.hms.repository.AdminRepository;
 import com.hospital.hms.repository.DoctorRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.service.BloodBankService;
@@ -90,6 +91,7 @@ public class BloodBankServiceImpl implements BloodBankService {
     private final EmailService           emailService;
     private final NotificationService    notificationService;
     private final InvoiceService         invoiceService;
+    private final AdminRepository        adminRepository;
 
     @Value("${hospital.name:Our Hospital}")
     private String hospitalName;
@@ -101,6 +103,12 @@ public class BloodBankServiceImpl implements BloodBankService {
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Blood bank notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -324,6 +332,11 @@ public class BloodBankServiceImpl implements BloodBankService {
                 NotificationType.BLOOD_REQUEST_CREATED,
                 "/doctor/blood-bank");
 
+        notifyAdmins("Blood Request Created",
+                "Dr. " + doctor.getName() + " requested " + dto.getQuantity()
+                + " units of " + bloodType.name() + " for patient " + patient.getName() + ".",
+                "/admin/blood-bank");
+
         // ── Notify patient ────────────────────────────────────────────────
         if (saved.getStatus() == BloodRequestStatus.RESERVED) {
             notify(patient.getId(),
@@ -411,6 +424,11 @@ public class BloodBankServiceImpl implements BloodBankService {
                 NotificationType.BLOOD_REQUEST_COMPLETED,
                 "/patient/history");
 
+        notifyAdmins("Blood Request Fulfilled",
+                request.getQuantity() + " units of " + request.getBloodType().name()
+                + " fulfilled for patient " + request.getPatientName() + ".",
+                "/admin/blood-bank");
+
         // Also send email
         sendEmailSilently(() ->
                 emailService.sendBloodCompletedEmail(
@@ -477,6 +495,11 @@ public class BloodBankServiceImpl implements BloodBankService {
                 ") has been cancelled. Please contact your doctor for more information.",
                 NotificationType.BLOOD_REQUEST_CANCELLED,
                 "/patient/history");
+
+        notifyAdmins("Blood Request Cancelled",
+                "Blood request (" + request.getBloodType().name() + " × " + request.getQuantity()
+                + ") for patient " + request.getPatientName() + " was cancelled.",
+                "/admin/blood-bank");
 
         return BloodRequestMapper.mapToDto(saved);
     }

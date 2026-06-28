@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
+import { useMyPatientProfile } from '@/hooks/usePatients';
 import { usePrescriptionsByPatient } from '@/hooks/usePrescriptions';
 import { LayoutDashboard, Calendar, Pill, Bell, User, ClipboardList, AlertCircle } from 'lucide-react';
 import { PrescriptionDto } from '@/services/prescriptionService';
@@ -22,10 +22,7 @@ const navItems = [
 
 const PatientPrescriptions = () => {
   const { user } = useAuth();
-  const { data: patients = [] } = usePatients();
-  const patient = patients.find(
-    (p) => String(p.id) === user?.id || p.nationalId === user?.nationalId,
-  );
+  const { data: patient } = useMyPatientProfile();
 
   const { data: prescriptions = [], isLoading, error } = usePrescriptionsByPatient(patient?.id);
 

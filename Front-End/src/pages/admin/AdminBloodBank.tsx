@@ -12,8 +12,11 @@ import {
   useBloodRequests,
   useFulfillBloodRequest,
   useCancelBloodRequest,
+  useBloodDonations,
+  useRecordBloodDonation,
 } from '@/hooks/useBloodBank';
-import { BloodUnitDto, BloodRequestDto } from '@/services/bloodBankService';
+import { BloodUnitDto, BloodRequestDto, BloodDonationDto } from '@/services/bloodBankService';
+import { usePatients } from '@/hooks/usePatients';
 import {
   BLOOD_TYPES, URGENCY_LEVELS, UNIT_STATUSES,
   fmtBloodType, fmtUrgency, fmtDateTime, daysUntilExpiry, urgencyColor, inventorySummary,
@@ -32,7 +35,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import {
   Plus, Edit, Droplets, CheckCircle, XCircle, AlertCircle,
-  RefreshCw, Package, ClipboardList,
+  Package, ClipboardList, Heart,
 } from 'lucide-react';
 
 // ── helper: urgency badge ─────────────────────────────────────────────────────
@@ -56,22 +59,33 @@ const ExpiryChip = ({ expiryDate }: { expiryDate?: string }) => {
 const emptyUnitForm = { bloodType: '', quantity: '', expiryDate: '', notes: '', status: 'AVAILABLE' };
 type UnitForm = typeof emptyUnitForm;
 
+const emptyDonation: BloodDonationDto = {
+  donorName: '', donorPhone: '', donorNationalId: '',
+  bloodType: '', quantity: 1, notes: '',
+  donationType: 'GENERAL', targetPatientId: undefined,
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 const AdminBloodBank: React.FC = () => {
   const { data: units = [],    isLoading: ldUnits,    error: errUnits,    refetch: refetchUnits }    = useBloodUnits();
   const { data: requests = [], isLoading: ldRequests, error: errRequests, refetch: refetchRequests } = useBloodRequests();
+  const { data: donations = [], refetch: refetchDonations } = useBloodDonations();
+  const { data: patients = [] } = usePatients();
   const addUnit     = useAddBloodUnit();
   const updateUnit  = useUpdateBloodUnit();
   const fulfill     = useFulfillBloodRequest();
   const cancel      = useCancelBloodRequest();
+  const recordDonation = useRecordBloodDonation();
 
   // ── dialogs ─────────────────────────────────────────────────────────────────
-  const [addOpen,    setAddOpen]    = useState(false);
-  const [editOpen,   setEditOpen]   = useState(false);
-  const [editTarget, setEditTarget] = useState<BloodUnitDto | null>(null);
-  const [unitForm,   setUnitForm]   = useState<UnitForm>(emptyUnitForm);
-  const [editForm,   setEditForm]   = useState<UnitForm>(emptyUnitForm);
+  const [addOpen,      setAddOpen]      = useState(false);
+  const [editOpen,     setEditOpen]     = useState(false);
+  const [editTarget,   setEditTarget]   = useState<BloodUnitDto | null>(null);
+  const [unitForm,     setUnitForm]     = useState<UnitForm>(emptyUnitForm);
+  const [editForm,     setEditForm]     = useState<UnitForm>(emptyUnitForm);
+  const [donationOpen, setDonationOpen] = useState(false);
+  const [donationForm, setDonationForm] = useState<BloodDonationDto>(emptyDonation);
 
   // ── search ──────────────────────────────────────────────────────────────────
   const [unitSearch, setUnitSearch] = useState('');
@@ -156,6 +170,26 @@ const AdminBloodBank: React.FC = () => {
       await cancel.mutateAsync(req.id);
       toast.success(`Request #${req.id} cancelled`);
     } catch (e) { toast.error(e instanceof Error ? e.message : 'Failed'); }
+  };
+
+  // ── handlers: donations ───────────────────────────────────────────────────────
+  const handleRecordDonation = async () => {
+    if (!donationForm.donorName.trim()) { toast.error('Donor name is required'); return; }
+    if (!donationForm.bloodType)        { toast.error('Blood type is required'); return; }
+    if (!donationForm.quantity || donationForm.quantity <= 0) { toast.error('Quantity must be > 0'); return; }
+    if (donationForm.donationType === 'SPECIFIC_PATIENT' && !donationForm.targetPatientId) {
+      toast.error('Please select the target patient'); return;
+    }
+    try {
+      await recordDonation.mutateAsync(donationForm);
+      toast.success(
+        donationForm.donationType === 'SPECIFIC_PATIENT'
+          ? `Donation recorded — units reserved for ${patients.find(p => p.id === donationForm.targetPatientId)?.name}`
+          : 'Donation recorded — units added to general inventory',
+      );
+      setDonationOpen(false);
+      setDonationForm(emptyDonation);
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Failed to record donation'); }
   };
 
   // ── table columns ─────────────────────────────────────────────────────────────
@@ -378,6 +412,9 @@ const AdminBloodBank: React.FC = () => {
             <ClipboardList className="h-4 w-4" />All Requests ({requests.length})
             {pendingCount > 0 && <Badge variant="destructive" className="ml-1">{pendingCount}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="donations" className="gap-2">
+            <Heart className="h-4 w-4 text-red-500" />Donations ({donations.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="inventory">
@@ -420,6 +457,150 @@ const AdminBloodBank: React.FC = () => {
               </Tabs>
             )
           }
+        </TabsContent>
+
+        {/* ── Donations Tab ─────────────────────────────────────────────── */}
+        <TabsContent value="donations">
+          <div className="flex justify-end mb-3">
+            <Dialog open={donationOpen} onOpenChange={setDonationOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2 bg-red-600 hover:bg-red-700">
+                  <Heart className="h-4 w-4" />Record Donation
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Heart className="h-5 w-5 text-red-500" />Record Blood Donation
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  {/* Donation Type */}
+                  <div>
+                    <Label>Donation Type *</Label>
+                    <Select
+                      value={donationForm.donationType}
+                      onValueChange={v => setDonationForm(p => ({
+                        ...p,
+                        donationType: v as 'GENERAL' | 'SPECIFIC_PATIENT',
+                        targetPatientId: undefined,
+                      }))}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="GENERAL">General Inventory — available for any patient</SelectItem>
+                        <SelectItem value="SPECIFIC_PATIENT">Directed — for a specific patient</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Target patient — only when SPECIFIC */}
+                  {donationForm.donationType === 'SPECIFIC_PATIENT' && (
+                    <div>
+                      <Label>Target Patient *</Label>
+                      <Select
+                        value={donationForm.targetPatientId ? String(donationForm.targetPatientId) : ''}
+                        onValueChange={v => setDonationForm(p => ({ ...p, targetPatientId: Number(v) }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="Select patient…" /></SelectTrigger>
+                        <SelectContent>
+                          {patients.map(pt => (
+                            <SelectItem key={pt.id} value={String(pt.id)}>
+                              {pt.name}{pt.bloodType ? ` (${pt.bloodType})` : ''} — {pt.nationalId}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {/* Donor info */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <Label>Donor Name *</Label>
+                      <Input value={donationForm.donorName}
+                        onChange={e => setDonationForm(p => ({ ...p, donorName: e.target.value }))}
+                        placeholder="Full name" />
+                    </div>
+                    <div>
+                      <Label>Phone</Label>
+                      <Input value={donationForm.donorPhone ?? ''}
+                        onChange={e => setDonationForm(p => ({ ...p, donorPhone: e.target.value }))}
+                        placeholder="Phone number" />
+                    </div>
+                    <div>
+                      <Label>National ID</Label>
+                      <Input value={donationForm.donorNationalId ?? ''}
+                        onChange={e => setDonationForm(p => ({ ...p, donorNationalId: e.target.value }))}
+                        placeholder="National ID" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Blood Type *</Label>
+                      <Select value={donationForm.bloodType}
+                        onValueChange={v => setDonationForm(p => ({ ...p, bloodType: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Select…" /></SelectTrigger>
+                        <SelectContent>
+                          {BLOOD_TYPES.map(bt => (
+                            <SelectItem key={bt.value} value={bt.value}>{bt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label>Quantity (units) *</Label>
+                      <Input type="number" min={1} value={donationForm.quantity}
+                        onChange={e => setDonationForm(p => ({ ...p, quantity: Number(e.target.value) }))} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <Label>Notes</Label>
+                    <Textarea value={donationForm.notes ?? ''} rows={2}
+                      onChange={e => setDonationForm(p => ({ ...p, notes: e.target.value }))}
+                      placeholder="Optional notes…" />
+                  </div>
+
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="outline" onClick={() => setDonationOpen(false)}>Cancel</Button>
+                    <Button onClick={handleRecordDonation} disabled={recordDonation.isPending}
+                      className="bg-red-600 hover:bg-red-700">
+                      <Heart className="h-4 w-4 mr-2" />
+                      {recordDonation.isPending ? 'Recording…' : 'Record Donation'}
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {/* Donations table */}
+          <DataTable
+            data={donations.map(d => ({ ...d, id: String(d.id) }))}
+            columns={[
+              { key: 'donorName',   header: 'Donor' },
+              { key: 'donorPhone',  header: 'Phone',      render: (d: BloodDonationDto) => d.donorPhone ?? '—' },
+              { key: 'bloodType',   header: 'Blood Type', render: (d: BloodDonationDto) => (
+                <span className="font-semibold text-red-600">{fmtBloodType(d.bloodType)}</span>
+              )},
+              { key: 'quantity',    header: 'Units',      render: (d: BloodDonationDto) => `${d.quantity} unit(s)` },
+              { key: 'donationType',header: 'Type',       render: (d: BloodDonationDto) => (
+                <Badge variant={d.donationType === 'SPECIFIC_PATIENT' ? 'default' : 'secondary'}>
+                  {d.donationType === 'SPECIFIC_PATIENT' ? `→ ${d.targetPatientName}` : 'General'}
+                </Badge>
+              )},
+              { key: 'bloodUnitId', header: 'Unit Status', render: (d: BloodDonationDto) => (
+                <span className="text-xs text-muted-foreground">
+                  {d.donationType === 'SPECIFIC_PATIENT' ? 'Reserved' : 'In Inventory'}
+                </span>
+              )},
+              { key: 'createdAt',   header: 'Date',       render: (d: BloodDonationDto) =>
+                d.createdAt ? d.createdAt.split('T')[0] : '—' },
+            ] as never}
+            emptyMessage="No donations recorded yet"
+          />
         </TabsContent>
       </Tabs>
     </DashboardLayout>

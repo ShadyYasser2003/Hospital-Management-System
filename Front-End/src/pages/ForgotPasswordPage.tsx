@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
 import { Mail, ArrowLeft, CheckCircle, AlertCircle } from 'lucide-react';
+import authService from '@/services/authService';
 
 const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
@@ -22,25 +23,28 @@ const ForgotPasswordPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
+
     if (!email.trim()) {
       setError('Email address is required');
       return;
     }
-    
+
     if (!validateEmail(email)) {
       setError('Please enter a valid email address');
       return;
     }
-    
+
     setLoading(true);
-    
-    // Mock API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setSubmitted(true);
-    setLoading(false);
-    toast.success('Password reset instructions sent!');
+    try {
+      await authService.forgotPassword(email.trim());
+      setSubmitted(true);
+      toast.success('Temporary password sent to your email');
+    } catch {
+      // Always show success to prevent email enumeration
+      setSubmitted(true);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -52,14 +56,17 @@ const ForgotPasswordPage = () => {
               <CheckCircle className="h-10 w-10 text-success" />
             </div>
             
-            <h3 className="text-lg font-semibold mb-2">Email Sent Successfully</h3>
-            
+            <h3 className="text-lg font-semibold mb-2">Check Your Email</h3>
+
             <p className="text-muted-foreground mb-6">
-              We've sent password reset instructions to:
+              If an account exists for:
               <br />
               <strong className="text-foreground">{email}</strong>
+              <br /><br />
+              A temporary password has been sent. Log in with it and change your
+              password immediately from your profile settings.
             </p>
-            
+
             <p className="text-sm text-muted-foreground mb-6">
               Didn't receive the email? Check your spam folder or try again.
             </p>

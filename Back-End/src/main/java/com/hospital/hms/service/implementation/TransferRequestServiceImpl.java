@@ -35,11 +35,18 @@ public class TransferRequestServiceImpl implements TransferRequestService {
     private final PdfGeneratorService pdfGeneratorService;
     private final EmailService emailService;
     private final NotificationService notificationService;
+    private final AdminRepository adminRepository;
 
     private void notify(Long recipientId, String title, String message,
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Transfer notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
     }
 
 
@@ -113,6 +120,11 @@ public class TransferRequestServiceImpl implements TransferRequestService {
                 NotificationType.TRANSFER_REQUEST_CREATED,
                 "/patient/history");
 
+        notifyAdmins("Transfer Request Created",
+                "Dr. " + doctor.getName() + " initiated transfer of patient " + patient.getName()
+                + " to " + hospital.getName() + ".",
+                "/admin/hospitals");
+
         return TransferRequestMapper.mapToDto(saved);
     }
 
@@ -167,6 +179,10 @@ public class TransferRequestServiceImpl implements TransferRequestService {
                     "Your medical records have been sent to " + transfer.getToHospitalName() + ".",
                     NotificationType.TRANSFER_REQUEST_SENT,
                     "/patient/history");
+
+            notifyAdmins("Transfer Sent",
+                    "Patient " + transfer.getPatientName() + " records sent to " + transfer.getToHospitalName() + ".",
+                    "/admin/hospitals");
 
         } catch (Exception e) {
             transfer.setStatus(TransferStatus.FAILED);

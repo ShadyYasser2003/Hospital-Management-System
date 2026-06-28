@@ -53,17 +53,17 @@ class WebSocketService {
 
       onConnect: () => {
         this.connected = true;
-        console.debug('[WS] Connected as user', userId);
+        if (import.meta.env.DEV) console.debug('[WS] Connected as user', userId);
         this.subscribe(userId, onNotification);
       },
 
       onDisconnect: () => {
         this.connected = false;
-        console.debug('[WS] Disconnected');
+        if (import.meta.env.DEV) console.debug('[WS] Disconnected');
       },
 
       onStompError: (frame) => {
-        console.warn('[WS] STOMP error:', frame.headers['message']);
+        if (import.meta.env.DEV) console.warn('[WS] STOMP error:', frame.headers['message']);
       },
     });
 
@@ -85,12 +85,12 @@ class WebSocketService {
           const notification: NotificationDto = JSON.parse(message.body);
           callback(notification);
         } catch (err) {
-          console.warn('[WS] Failed to parse notification:', err);
+          if (import.meta.env.DEV) console.warn('[WS] Failed to parse notification:', err);
         }
       },
     );
 
-    console.debug('[WS] Subscribed to notifications for user', userId);
+    if (import.meta.env.DEV) console.debug('[WS] Subscribed to notifications for user', userId);
   }
 
   disconnect(): void {

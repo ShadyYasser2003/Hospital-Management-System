@@ -2,6 +2,7 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.UserDto;
 import com.hospital.hms.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,7 +35,7 @@ public class UserController {
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> createUser(@RequestBody UserDto userDTO) {
+    public ResponseEntity<UserDto> createUser(@Valid @RequestBody UserDto userDTO) {
         UserDto createdUser = userService.createUser(userDTO);
         return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
     }
@@ -42,7 +43,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<UserDto> updateUser(
             @PathVariable Long id,
-            @RequestBody UserDto userDTO) {
+            @Valid @RequestBody UserDto userDTO) {
         UserDto updatedUser = userService.updateUser(id, userDTO);
         return ResponseEntity.ok(updatedUser);
     }

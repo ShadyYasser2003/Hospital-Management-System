@@ -30,8 +30,8 @@ public class Bed {
     @Enumerated(EnumType.STRING)
     private BedStatus status = BedStatus.AVAILABLE;
 
-    @OneToOne
-    @JoinColumn(name = "patient_id")
+    @OneToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "patient_id", nullable = true)
     private Patient patient;
 
     private String patientName;

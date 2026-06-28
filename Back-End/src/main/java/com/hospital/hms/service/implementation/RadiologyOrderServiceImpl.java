@@ -11,6 +11,7 @@ import com.hospital.hms.entity.Technician;
 import com.hospital.hms.exception.UserNotFoundException;
 import com.hospital.hms.mapper.RadiologyOrderMapper;
 import com.hospital.hms.repository.DoctorRepository;
+import com.hospital.hms.repository.AdminRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.repository.RadiologyOrderRepository;
 import com.hospital.hms.repository.TechnicianRepository;
@@ -37,6 +38,7 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
     private final TechnicianRepository technicianRepository;
     private final InvoiceService invoiceService;
     private final NotificationService notificationService;
+    private final AdminRepository adminRepository;
 
     private static final DateTimeFormatter DT_FORMAT =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
@@ -45,6 +47,12 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Radiology notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
     }
 
 
@@ -172,6 +180,11 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
         } catch (Exception e) {
             log.warn("Could not notify technicians about radiology order: {}", e.getMessage());
         }
+
+        notifyAdmins("New Radiology Order",
+                "Dr. " + doctor.getName() + " ordered " + dto.getOrderType()
+                + " scan for patient " + patient.getName() + ".",
+                "/admin/diagnosis");
 
         return RadiologyOrderMapper.mapToDto(saved);
     }
@@ -335,6 +348,10 @@ public class RadiologyOrderServiceImpl implements RadiologyOrderService {
                 "The " + order.getOrderType() + " scan for patient " + order.getPatientName() + " is complete.",
                 NotificationType.RADIOLOGY_ORDER_COMPLETED,
                 "/doctor/tests");
+
+        notifyAdmins("Radiology Report Ready",
+                order.getOrderType() + " scan for patient " + order.getPatientName() + " completed.",
+                "/admin/diagnosis");
 
         return RadiologyOrderMapper.mapToDto(saved);
     }

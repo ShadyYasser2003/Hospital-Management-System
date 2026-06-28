@@ -3,6 +3,7 @@ package com.hospital.hms.controller;
 import com.hospital.hms.dto.NurseDto;
 import com.hospital.hms.dto.PatientDTO;
 import com.hospital.hms.service.NurseService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,11 +27,11 @@ public class NurseController {
         return ResponseEntity.ok(nurseService.getNurseById(id));
     }
     @PostMapping
-    public ResponseEntity<NurseDto> createNurse(@RequestBody NurseDto nurseDto){
+    public ResponseEntity<NurseDto> createNurse(@Valid @RequestBody NurseDto nurseDto){
         return new ResponseEntity<>(nurseService.createNurse(nurseDto), HttpStatus.CREATED);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<NurseDto> updateNurse(@PathVariable Long id,@RequestBody NurseDto nurseDto){
+    public ResponseEntity<NurseDto> updateNurse(@PathVariable Long id, @Valid @RequestBody NurseDto nurseDto){
         return ResponseEntity.ok(nurseService.updateNurse(id, nurseDto));
     }
     @GetMapping("/name")

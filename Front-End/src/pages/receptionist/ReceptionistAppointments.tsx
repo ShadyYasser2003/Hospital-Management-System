@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
@@ -21,23 +21,22 @@ import { useQuery } from '@tanstack/react-query';
 import doctorService from '@/services/doctorService';
 import { AppointmentDto } from '@/services/appointmentService';
 import { receptionistNavItems } from '@/constants/receptionistNavItems';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const ReceptionistAppointments = () => {
-  const { data: appointments = [], isLoading, error } = useAppointments();
-  const { data: patients = [] } = usePatients();
-  const { data: pendingInvoices = [] }  = useInvoicesByStatus('PENDING');
-  const { data: partialInvoices = [] }  = useInvoicesByStatus('PARTIAL');
-  const { data: departments = [] } = useDepartments();
-  const { data: doctors = [] } = useQuery({ queryKey: ['doctors'], queryFn: doctorService.getAll });
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  // Only show patients who have an open invoice (PENDING or PARTIAL)
-  const openInvoicePatientIds = new Set(
-    [...pendingInvoices, ...partialInvoices].map(inv => String(inv.patientId))
-  );
-  const patientsWithInvoice = patients.filter(p => openInvoicePatientIds.has(String(p.id)));
-  const createAppointment = useCreateAppointment();
+  const { data: appointments = [], isLoading, error } = useAppointments();
+  const { data: patients     = [] } = usePatients();
+  const { data: pendingInvoices = [], isLoading: loadingPending } = useInvoicesByStatus('PENDING');
+  const { data: partialInvoices = [], isLoading: loadingPartial } = useInvoicesByStatus('PARTIAL');
+  const { data: departments  = [] } = useDepartments();
+  const { data: doctors      = [] } = useQuery({ queryKey: ['doctors'], queryFn: doctorService.getAll });
+
+  const createAppointment  = useCreateAppointment();
   const confirmAppointment = useConfirmAppointment();
-  const cancelAppointment = useCancelAppointment();
+  const cancelAppointment  = useCancelAppointment();
 
   const today = new Date().toISOString().split('T')[0];
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -46,13 +45,30 @@ const ReceptionistAppointments = () => {
     time: '', type: 'CONSULTATION', notes: '',
   });
 
-  // Filter doctors by selected department — use departmentName if available, fall back to specialization keyword match
+  // ── Only patients with an open (PENDING or PARTIAL) invoice can be booked ──
+  const invoicesLoading = loadingPending || loadingPartial;
+  const openInvoicePatientIds = new Set([
+    ...pendingInvoices.map(i => String(i.patientId)),
+    ...partialInvoices.map(i => String(i.patientId)),
+  ]);
+  const bookablePatients = patients.filter(p => openInvoicePatientIds.has(String(p.id)));
+
+  // ── Auto-open dialog pre-selecting patient coming from Invoices page ───────
+  useEffect(() => {
+    const state = location.state as { newPatientId?: string; newPatientName?: string } | null;
+    if (state?.newPatientId) {
+      setFormData(f => ({ ...f, patientId: state.newPatientId! }));
+      setDialogOpen(true);
+      window.history.replaceState({}, '');
+    }
+  }, [location.state]);
+
+  // Filter doctors by selected department
   const filteredDoctors = formData.department
     ? doctors.filter((d) => {
         if (d.departmentName) {
           return d.departmentName.toLowerCase() === formData.department.toLowerCase();
         }
-        // fallback: partial keyword match between specialization and department name
         const spec = d.specialization?.toLowerCase() ?? '';
         const dept = formData.department.toLowerCase();
         return spec.includes(dept.split(' ')[0]) || dept.includes(spec.split(' ')[0] ?? '');
@@ -64,7 +80,6 @@ const ReceptionistAppointments = () => {
   const formatDate = (d: string) => d?.split('T')[0] ?? d;
   const formatTime = (t: string) => t?.substring(0, 5) ?? t;
 
-  // Generate time slots 08:00 - 17:00
   const timeSlots: string[] = [];
   for (let h = 8; h <= 17; h++) {
     timeSlots.push(`${String(h).padStart(2, '0')}:00`);
@@ -78,13 +93,13 @@ const ReceptionistAppointments = () => {
     }
     try {
       await createAppointment.mutateAsync({
-        patientId: Number(formData.patientId),
-        doctorId: Number(formData.doctorId),
-        department: formData.department,
+        patientId:       Number(formData.patientId),
+        doctorId:        Number(formData.doctorId),
+        department:      formData.department,
         appointmentDate: formData.date,
         appointmentTime: formData.time + ':00',
-        type: formData.type,
-        notes: formData.notes,
+        type:            formData.type,
+        notes:           formData.notes,
       });
       toast.success('Appointment booked successfully');
       setDialogOpen(false);
@@ -105,11 +120,11 @@ const ReceptionistAppointments = () => {
   };
 
   const pendingColumns = [
-    { key: 'patientName', header: 'Patient' },
-    { key: 'doctorName', header: 'Doctor' },
+    { key: 'patientName',     header: 'Patient' },
+    { key: 'doctorName',      header: 'Doctor' },
     { key: 'appointmentDate', header: 'Date', render: (a: AppointmentDto) => formatDate(a.appointmentDate) },
     { key: 'appointmentTime', header: 'Time', render: (a: AppointmentDto) => formatTime(a.appointmentTime) },
-    { key: 'type', header: 'Type', render: (a: AppointmentDto) => <span className="capitalize">{a.type?.toLowerCase()}</span> },
+    { key: 'type',            header: 'Type', render: (a: AppointmentDto) => <span className="capitalize">{a.type?.toLowerCase()}</span> },
     {
       key: 'actions', header: 'Actions',
       render: (a: AppointmentDto) => (
@@ -122,12 +137,12 @@ const ReceptionistAppointments = () => {
   ];
 
   const allColumns = [
-    { key: 'patientName', header: 'Patient' },
-    { key: 'doctorName', header: 'Doctor' },
-    { key: 'department', header: 'Department' },
-    { key: 'appointmentDate', header: 'Date', render: (a: AppointmentDto) => formatDate(a.appointmentDate) },
-    { key: 'appointmentTime', header: 'Time', render: (a: AppointmentDto) => formatTime(a.appointmentTime) },
-    { key: 'status', header: 'Status', render: (a: AppointmentDto) => <StatusBadge status={a.status?.toLowerCase() as never} /> },
+    { key: 'patientName',     header: 'Patient' },
+    { key: 'doctorName',      header: 'Doctor' },
+    { key: 'department',      header: 'Department' },
+    { key: 'appointmentDate', header: 'Date',   render: (a: AppointmentDto) => formatDate(a.appointmentDate) },
+    { key: 'appointmentTime', header: 'Time',   render: (a: AppointmentDto) => formatTime(a.appointmentTime) },
+    { key: 'status',          header: 'Status', render: (a: AppointmentDto) => <StatusBadge status={a.status?.toLowerCase() as never} /> },
   ];
 
   return (
@@ -143,15 +158,33 @@ const ReceptionistAppointments = () => {
             <DialogContent className="max-w-md">
               <DialogHeader><DialogTitle>Book New Appointment</DialogTitle></DialogHeader>
               <form onSubmit={handleCreate} className="space-y-4">
+
                 <div>
-                  <Label>Patient</Label>
-                  <Select onValueChange={(v) => setFormData({ ...formData, patientId: v })}>
-                    <SelectTrigger><SelectValue placeholder="Select patient" /></SelectTrigger>
+                  <Label>Patient <span className="text-xs text-muted-foreground">(must have open invoice)</span></Label>
+                  <Select value={formData.patientId} onValueChange={(v) => setFormData({ ...formData, patientId: v })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={
+                        invoicesLoading ? 'Loading patients…'
+                        : bookablePatients.length === 0 ? 'No patients with open invoices'
+                        : 'Select patient'
+                      } />
+                    </SelectTrigger>
                     <SelectContent>
-                      {patientsWithInvoice.map((p) => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({p.nationalId})</SelectItem>)}
+                      {invoicesLoading ? (
+                        <SelectItem value="_loading" disabled>Loading…</SelectItem>
+                      ) : bookablePatients.length === 0 ? (
+                        <SelectItem value="_none" disabled>Create an invoice first</SelectItem>
+                      ) : (
+                        bookablePatients.map((p) => (
+                          <SelectItem key={p.id} value={String(p.id)}>
+                            {p.name} ({p.nationalId})
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div>
                   <Label>Department</Label>
                   <Select onValueChange={(v) => setFormData({ ...formData, department: v, doctorId: '' })}>
@@ -161,6 +194,7 @@ const ReceptionistAppointments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div>
                   <Label>Doctor</Label>
                   <Select value={formData.doctorId} onValueChange={(v) => setFormData({ ...formData, doctorId: v })}>
@@ -170,8 +204,13 @@ const ReceptionistAppointments = () => {
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="grid grid-cols-2 gap-4">
-                  <div><Label>Date</Label><Input type="date" value={formData.date} min={today} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required /></div>
+                  <div>
+                    <Label>Date</Label>
+                    <Input type="date" value={formData.date} min={today}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+                  </div>
                   <div>
                     <Label>Time</Label>
                     <Select value={formData.time} onValueChange={(v) => setFormData({ ...formData, time: v })}>
@@ -182,6 +221,7 @@ const ReceptionistAppointments = () => {
                     </Select>
                   </div>
                 </div>
+
                 <div>
                   <Label>Type</Label>
                   <Select value={formData.type} onValueChange={(v) => setFormData({ ...formData, type: v })}>
@@ -193,8 +233,14 @@ const ReceptionistAppointments = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Notes</Label><Input value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} /></div>
-                <Button type="submit" className="w-full" disabled={createAppointment.isPending}>
+
+                <div>
+                  <Label>Notes</Label>
+                  <Input value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} />
+                </div>
+
+                <Button type="submit" className="w-full"
+                  disabled={createAppointment.isPending || bookablePatients.length === 0 || invoicesLoading}>
                   {createAppointment.isPending ? 'Booking...' : 'Book Appointment'}
                 </Button>
               </form>
@@ -203,8 +249,15 @@ const ReceptionistAppointments = () => {
         }
       />
 
-      {isLoading && <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>}
-      {error && <Alert variant="destructive"><AlertCircle className="h-4 w-4" /><AlertDescription>{error instanceof Error ? error.message : 'Failed to load appointments'}</AlertDescription></Alert>}
+      {isLoading && (
+        <div className="space-y-2">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
+      )}
+      {error && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error instanceof Error ? error.message : 'Failed to load appointments'}</AlertDescription>
+        </Alert>
+      )}
 
       {!isLoading && !error && (
         <Tabs defaultValue="pending">

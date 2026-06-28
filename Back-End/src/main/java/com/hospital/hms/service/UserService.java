@@ -20,4 +20,5 @@ public interface UserService {
     public void changePassword(Long userId, String oldPassword, String newPassword);
     public void resetPassword(Long userId, String newPassword);
     public UserDto updateStatus(Long userId, String status);
+    public void forgotPassword(String email);
 }

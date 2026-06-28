@@ -34,18 +34,6 @@ const PharmacistDispense = () => {
 
   const pending = prescriptions.filter(p => p.status?.toUpperCase() === 'PENDING');
 
-  /** Estimate total cost from medicine stock selling prices */
-  const estimateTotal = (rx: PrescriptionDto): number => {
-    return rx.items?.reduce((sum, item) => {
-      const med = medicines.find(m =>
-        m.name?.toLowerCase() === item.medicineName?.toLowerCase() ||
-        m.genericName?.toLowerCase() === item.medicineName?.toLowerCase(),
-      );
-      // If we can't find price, use 0 — accountant will handle billing
-      return sum + (0 * (item.quantity ?? 1));
-    }, 0) ?? 0;
-  };
-
   const handleDispense = async () => {
     if (!selectedRx) return;
     setDispensing(true);

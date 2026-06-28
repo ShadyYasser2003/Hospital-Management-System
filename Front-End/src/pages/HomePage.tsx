@@ -87,8 +87,8 @@ const HomePage = () => {
   const departmentNames = depts.length > 0
     ? depts.map(d => d.name)
     : ['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics',
-       'Emergency', 'Radiology', 'Laboratory', 'Pharmacy',
-       'Oncology', 'Dermatology'];
+       'Emergency', 'Radiology', 'Oncology', 'Dermatology',
+       'Pediatrics', 'Gynecology'];
   return (
     <div className="min-h-screen bg-background text-foreground">
 

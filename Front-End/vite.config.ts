@@ -12,6 +12,7 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 5173,
+    strictPort: true,
     hmr: {
       overlay: false,
     },
@@ -19,7 +20,7 @@ export default defineConfig(({ mode }) => ({
       // All requests to /chatbot-api/* are forwarded to the AWS chatbot server.
       // The browser only ever talks to localhost, so CORS is never triggered.
       "/chatbot-api": {
-        target: "http://13.222.59.241:8000",
+        target: "http://35.172.118.64:8000",
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/chatbot-api/, ""),
       },

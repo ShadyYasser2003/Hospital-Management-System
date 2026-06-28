@@ -174,9 +174,7 @@ public class MedicineServiceImpl implements MedicineService {
             categoriesToAdd.add(category);
         }
         Medicine savedMedicine = repository.save(existingMedicine);
-
         categoryRepository.saveAll(categoriesToAdd);
-        System.out.println("medicine list size: "+existingMedicine.getCategoryList().size());
         return MedicineMapper.mapToMedicineDto((savedMedicine));
     }
 

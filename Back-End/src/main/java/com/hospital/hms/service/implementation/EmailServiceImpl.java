@@ -156,7 +156,67 @@ public class EmailServiceImpl implements EmailService {
         sendPlainText(toEmail, subject, body);
     }
 
+    @Override
+    public void sendAppointmentReminder(String toEmail,
+                                        String patientName,
+                                        String doctorName,
+                                        String appointmentDate,
+                                        String appointmentTime,
+                                        String department) {
+        String subject = "⏰ Appointment Reminder — " + appointmentDate + " at " + appointmentTime;
+        String body = """
+                Dear %s,
+
+                This is a friendly reminder about your upcoming appointment.
+
+                ─────────────────────────────────────
+                  Doctor      : Dr. %s
+                  Department  : %s
+                  Date        : %s
+                  Time        : %s
+                  Hospital    : %s
+                ─────────────────────────────────────
+
+                Please arrive 10 minutes early and bring any relevant medical documents.
+                If you need to reschedule, please contact us as soon as possible.
+
+                We look forward to seeing you!
+
+                Best regards,
+                %s
+                """.formatted(
+                patientName, doctorName, department != null ? department : "N/A",
+                appointmentDate, appointmentTime, hospitalName, hospitalName);
+
+        sendPlainText(toEmail, subject, body);
+    }
+
     // ──────────────────────────────────────────────────────────────────────
+
+    @Override
+    public void sendPasswordResetEmail(String toEmail, String username, String temporaryPassword) {
+        String subject = "Password Reset — " + hospitalName;
+        String body = """
+                Dear %s,
+
+                We received a request to reset your password for your %s account.
+
+                Your temporary password is:
+
+                    %s
+
+                Please log in with this temporary password and change it immediately
+                in your Profile Settings.
+
+                If you did not request a password reset, please contact your system
+                administrator immediately.
+
+                Best regards,
+                %s
+                """.formatted(username, hospitalName, temporaryPassword, hospitalName);
+
+        sendPlainText(toEmail, subject, body);
+    }
 
     private void sendPlainText(String toEmail, String subject, String body) {
         try {

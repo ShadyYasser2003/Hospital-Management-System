@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, UserPlus } from 'lucide-react';
 import { useCreatePatient } from '@/hooks/usePatients';
 import { receptionistNavItems } from '@/constants/receptionistNavItems';
+import { validateUsername, USERNAME_HINT } from '@/utils/usernameValidation';
 
 const PatientRegistration = () => {
   const navigate = useNavigate();
@@ -29,10 +30,8 @@ const PatientRegistration = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.username.trim()) { toast.error('Username is required'); return; }
-    if (/\s/.test(formData.username)) {
-      toast.error('Username cannot contain spaces'); return;
-    }
+    const usernameCheck = validateUsername(formData.username);
+    if (!usernameCheck.valid) { toast.error(usernameCheck.error!); return; }
     if (!formData.password || formData.password.length < 6) {
       toast.error('Password must be at least 6 characters'); return;
     }
@@ -61,7 +60,9 @@ const PatientRegistration = () => {
         medicalHistory: formData.medicalHistory || undefined,
       });
       toast.success('Patient registered successfully!');
-      navigate('/receptionist/invoices', { state: { newPatientId: String(result.id), newPatientName: formData.name } });
+      navigate('/receptionist/invoices', {
+        state: { newPatientId: String(result.id), newPatientName: formData.name },
+      });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to register patient');
     }
@@ -77,7 +78,11 @@ const PatientRegistration = () => {
             <CardHeader><CardTitle className="text-lg">Personal Information</CardTitle></CardHeader>
             <CardContent className="grid sm:grid-cols-2 gap-4">
               <div><Label>Full Name *</Label><Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} required /></div>
-              <div><Label>Username *</Label><Input value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="e.g. john.doe or john_doe" required /></div>
+              <div>
+                <Label>Username *</Label>
+                <Input value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} placeholder="e.g. john.doe or john_doe" required />
+                <p className="text-xs text-muted-foreground mt-1">{USERNAME_HINT}</p>
+              </div>
               <div><Label>National ID *</Label><Input value={formData.nationalId} onChange={(e) => setFormData({ ...formData, nationalId: e.target.value })} required /></div>
               <div><Label>Date of Birth *</Label><Input type="date" value={formData.dateOfBirth} max={today} onChange={(e) => setFormData({ ...formData, dateOfBirth: e.target.value })} required /></div>
               <div>

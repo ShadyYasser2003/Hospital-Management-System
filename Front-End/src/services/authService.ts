@@ -81,6 +81,11 @@ const authService = {
     const { data } = await api.put<string>(`/api/auth/${userId}/reset-password`, payload);
     return data;
   },
+
+  async forgotPassword(email: string): Promise<string> {
+    const { data } = await api.post<string>('/api/auth/forgot-password', { email });
+    return data;
+  },
 };
 
 export default authService;

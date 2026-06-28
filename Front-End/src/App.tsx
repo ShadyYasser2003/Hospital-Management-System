@@ -89,7 +89,8 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               {/* Public Routes */}
-              <Route path="/" element={<HomePage />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
+              <Route path="/home" element={<HomePage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
 
@@ -172,7 +173,7 @@ const App = () => (
               <Route path="/technician/profile" element={<ProtectedRoute allowedRoles={['technician']}><TechnicianProfile /></ProtectedRoute>} />
 
               {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
           </BrowserRouter>
         </TooltipProvider>

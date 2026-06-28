@@ -85,3 +85,33 @@ export const useCancelBloodRequest = () => {
     onSuccess: () => invalidateAll(qc),
   });
 };
+
+// ─── Blood Donation hooks ─────────────────────────────────────────────────────
+
+export const BLOOD_DONATIONS_KEY = 'bloodDonations';
+
+export const useBloodDonations = () =>
+  useQuery({
+    queryKey: [BLOOD_DONATIONS_KEY],
+    queryFn: bloodBankService.getAllDonations,
+    retry: false,
+  });
+
+export const useBloodDonationsByPatient = (patientId: number | string | undefined) =>
+  useQuery({
+    queryKey: [BLOOD_DONATIONS_KEY, 'patient', patientId],
+    queryFn: () => bloodBankService.getDonationsByPatient(patientId!),
+    enabled: !!patientId,
+  });
+
+export const useRecordBloodDonation = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: import('@/services/bloodBankService').BloodDonationDto) =>
+      bloodBankService.recordDonation(payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [BLOOD_DONATIONS_KEY] });
+      qc.invalidateQueries({ queryKey: [BLOOD_UNITS_KEY] });
+    },
+  });
+};

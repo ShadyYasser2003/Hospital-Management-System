@@ -2,6 +2,7 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.AccountantDto;
 import com.hospital.hms.service.AccountantService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +18,7 @@ public class AccountantController {
     private final AccountantService accountantService;
 
     @PostMapping
-    public ResponseEntity<AccountantDto> create(@RequestBody AccountantDto dto) {
+    public ResponseEntity<AccountantDto> create(@Valid @RequestBody AccountantDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(accountantService.createAccountant(dto));
     }
 
@@ -32,7 +33,7 @@ public class AccountantController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<AccountantDto> update(@PathVariable Long id, @RequestBody AccountantDto dto) {
+    public ResponseEntity<AccountantDto> update(@PathVariable Long id, @Valid @RequestBody AccountantDto dto) {
         return ResponseEntity.ok(accountantService.update(id, dto));
     }
 

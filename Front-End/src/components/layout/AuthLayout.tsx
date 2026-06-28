@@ -22,7 +22,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
         </div>
         
         <div className="relative z-10 flex flex-col justify-center px-12 text-white">
-          <Link to="/" className="flex items-center gap-3 mb-12">
+          <Link to="/home" className="flex items-center gap-3 mb-12">
             <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm">
               <Building2 className="h-10 w-10" />
             </div>
@@ -70,7 +70,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
-            <Link to="/" className="inline-flex items-center gap-3 mb-4">
+            <Link to="/home" className="inline-flex items-center gap-3 mb-4">
               <div className="p-3 bg-primary/10 rounded-xl">
                 <Building2 className="h-8 w-8 text-primary" />
               </div>
@@ -90,7 +90,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle }) =>
           {children}
           
           <p className="text-center mt-8 text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">← Back to Home</Link>
+            <Link to="/home" className="hover:text-primary transition-colors">← Back to Home</Link>
           </p>
         </div>
       </div>

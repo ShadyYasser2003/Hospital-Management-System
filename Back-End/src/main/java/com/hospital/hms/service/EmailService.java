@@ -50,4 +50,19 @@ public interface EmailService {
     void sendLowStockAlertEmail(String toEmail,
                                 String bloodType,
                                 int remainingQuantity);
+
+    /**
+     * Appointment reminder sent to the patient 24 hours before their appointment.
+     */
+    void sendAppointmentReminder(String toEmail,
+                                 String patientName,
+                                 String doctorName,
+                                 String appointmentDate,
+                                 String appointmentTime,
+                                 String department);
+
+    /**
+     * Sends a temporary password to the user's email as part of the forgot-password flow.
+     */
+    void sendPasswordResetEmail(String toEmail, String username, String temporaryPassword);
 }

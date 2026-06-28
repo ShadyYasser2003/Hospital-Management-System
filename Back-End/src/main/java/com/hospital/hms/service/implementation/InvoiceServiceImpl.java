@@ -38,6 +38,7 @@ public class InvoiceServiceImpl implements InvoiceService {
     private final PatientRepository    patientRepository;
     private final AccountantRepository accountantRepository;
     private final AdminRepository      adminRepository;
+    private final ReceptionistRepository receptionistRepository;
     private final NotificationService  notificationService;
 
     private String generateInvoiceNumber() {
@@ -69,6 +70,16 @@ public class InvoiceServiceImpl implements InvoiceService {
             adminRepository.findAll().forEach(a -> notify(a.getId(), title, message, type, url));
         } catch (Exception e) {
             log.warn("Admin broadcast skipped: {}", e.getMessage());
+        }
+    }
+
+    /** Broadcast a notification to every receptionist */
+    private void notifyAllReceptionists(String title, String message, String url) {
+        try {
+            receptionistRepository.findAll().forEach(r ->
+                notify(r.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) {
+            log.warn("Receptionist broadcast skipped: {}", e.getMessage());
         }
     }
 
@@ -217,6 +228,13 @@ public class InvoiceServiceImpl implements InvoiceService {
                         + " — patient: " + invoice.getPatient().getName() + ".",
                 NotificationType.PAYMENT_RECEIVED,
                 "/admin/transactions");
+
+        notifyAllReceptionists(
+                "Payment Received — Checkout Available",
+                "Patient " + invoice.getPatient().getName()
+                        + " paid $" + String.format("%.2f", paymentDto.getAmount())
+                        + " on invoice " + invoice.getInvoiceNumber() + ". You can now process checkout.",
+                "/receptionist/checkout");
 
         return PaymentMapper.mapToDto(saved);
     }

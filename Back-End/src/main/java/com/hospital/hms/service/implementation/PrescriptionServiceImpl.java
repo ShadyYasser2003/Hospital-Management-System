@@ -5,6 +5,7 @@ import com.hospital.hms.Enum.PrescriptionStatus;
 import com.hospital.hms.dto.PrescriptionDTO;
 import com.hospital.hms.dto.PrescriptionItemDTO;
 import com.hospital.hms.entity.*;
+import java.util.List;
 import com.hospital.hms.mapper.PrescriptionItemMapper;
 import com.hospital.hms.mapper.PrescriptionMapper;
 import com.hospital.hms.repository.*;
@@ -41,11 +42,18 @@ public class PrescriptionServiceImpl implements PrescriptionService {
     private final NurseRepository nurseRepository;
     private final InvoiceService invoiceService;
     private final NotificationService notificationService;
+    private final AdminRepository adminRepository;
 
     private void notify(Long recipientId, String title, String message,
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Prescription notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
     }
 
     public List<PrescriptionDTO> getAllPrescriptions() {
@@ -154,6 +162,10 @@ public class PrescriptionServiceImpl implements PrescriptionService {
             log.warn("Could not notify nurses about prescription: {}", e.getMessage());
         }
 
+        notifyAdmins("New Prescription Created",
+                "Dr. " + doctor.getName() + " issued a prescription for patient " + patient.getName() + ".",
+                "/admin/users");
+
         return PrescriptionMapper.mapToPrescriptionDTO(savedPrescription);
     }
 
@@ -214,13 +226,28 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     "/doctor/prescriptions");
         }
 
+        notifyAdmins("Prescription Dispensed",
+                "Prescription for patient " + prescription.getPatientName() + " has been dispensed.",
+                "/admin/users");
+
         // Auto-add medication charge to patient's invoice
         if (prescription.getPatient() != null) {
             try {
                 double totalCharge = updated.getItems().stream()
                         .mapToDouble(item -> {
-                            // Estimate cost: quantity × a nominal unit price per item
-                            // Use 10.0 as default if no price data available
+                            // Look up real selling price from MedicineStock
+                            if (item.getMedicine() != null) {
+                                List<MedicineStock> stocks = item.getMedicine().getMedicineStocks();
+                                if (stocks != null && !stocks.isEmpty()) {
+                                    double unitPrice = stocks.stream()
+                                            .filter(s -> s.getSellingPrice() != null && s.getSellingPrice() > 0)
+                                            .mapToDouble(MedicineStock::getSellingPrice)
+                                            .average()
+                                            .orElse(10.0);
+                                    return (item.getQuantity() != null ? item.getQuantity() : 1) * unitPrice;
+                                }
+                            }
+                            // Fallback: $10 per unit if no stock price available
                             return item.getQuantity() != null ? item.getQuantity() * 10.0 : 10.0;
                         }).sum();
 
@@ -264,6 +291,10 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     NotificationType.PRESCRIPTION_DISPENSED,
                     "/doctor/prescriptions");
 
+        notifyAdmins("Prescription Partially Dispensed",
+                "Prescription for patient " + prescription.getPatientName() + " was partially dispensed.",
+                "/admin/users");
+
         return PrescriptionMapper.mapToPrescriptionDTO(updated);
     }
 
@@ -287,6 +318,10 @@ public class PrescriptionServiceImpl implements PrescriptionService {
                     "Prescription for patient " + prescription.getPatientName() + " has been cancelled.",
                     NotificationType.PRESCRIPTION_DISPENSED,
                     "/doctor/prescriptions");
+
+        notifyAdmins("Prescription Cancelled",
+                "Prescription for patient " + prescription.getPatientName() + " was cancelled.",
+                "/admin/users");
 
         return PrescriptionMapper.mapToPrescriptionDTO(updated);
     }

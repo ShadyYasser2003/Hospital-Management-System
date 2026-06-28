@@ -204,7 +204,6 @@ public class MedicineDispensationServiceImpl implements MedicineDispensationServ
                 .orElseThrow(()->new UserNotFoundException("Patient not found with id: "+patientId));
         List<MedicineDispensation> patientDispensations= patient.getDispensationList();
         if(patientDispensations.isEmpty()){
-            System.out.println("Patient with id: "+patientId+" ,doesn't have current dispensations");
             return 0.0;
         }
         Double totalCosts = 0.0;

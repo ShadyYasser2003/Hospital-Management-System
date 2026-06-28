@@ -4,7 +4,8 @@ import PageHeader from '@/components/shared/PageHeader';
 import DataTable from '@/components/shared/DataTable';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { useInvoices, useInvoicesByStatus, useCreateInvoice, useCancelInvoice } from '@/hooks/useInvoices';
-import { usePatients } from '@/hooks/usePatients';
+import { usePatients, PATIENTS_KEY } from '@/hooks/usePatients';
+import { useQueryClient } from '@tanstack/react-query';
 import { InvoiceDto } from '@/services/invoiceService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,11 +16,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
-import { Plus, Eye } from 'lucide-react';import { useLocation } from 'react-router-dom';
+import { Plus, Eye } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { receptionistNavItems } from '@/constants/receptionistNavItems';
 
 const ReceptionistInvoices = () => {
-  const location = useLocation();
+  const location  = useLocation();
+  const navigate  = useNavigate();
+  const qc        = useQueryClient();
   const { data: allPage, isLoading } = useInvoices();
   const { data: pending = [] }       = useInvoicesByStatus('PENDING');
   const { data: partial = [] }       = useInvoicesByStatus('PARTIAL');
@@ -39,9 +43,10 @@ const ReceptionistInvoices = () => {
   useEffect(() => {
     const state = location.state as { newPatientId?: string; newPatientName?: string } | null;
     if (state?.newPatientId) {
+      // Invalidate patients cache so the new patient appears in the dropdown
+      qc.invalidateQueries({ queryKey: [PATIENTS_KEY] });
       setNewPatientId(state.newPatientId);
       setCreateOpen(true);
-      // Clear state so refreshing doesn't re-open
       window.history.replaceState({}, '');
     }
   }, [location.state]);
@@ -53,10 +58,15 @@ const ReceptionistInvoices = () => {
         patientId: Number(newPatientId),
         notes: newNotes,
       });
+      const patient = patients.find(p => String(p.id) === newPatientId);
       toast.success('Invoice created');
       setCreateOpen(false);
       setNewPatientId('');
       setNewNotes('');
+      // Go straight to appointments so receptionist can book
+      navigate('/receptionist/appointments', {
+        state: { newPatientId, newPatientName: patient?.name ?? '' },
+      });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Failed to create invoice');
     }

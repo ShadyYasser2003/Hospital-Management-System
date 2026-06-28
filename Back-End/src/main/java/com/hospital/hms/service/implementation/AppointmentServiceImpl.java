@@ -12,6 +12,8 @@ import com.hospital.hms.exception.PatientNotFoundException;
 import com.hospital.hms.exception.UserNotFoundException;
 import com.hospital.hms.mapper.AppointmentMapper;
 import com.hospital.hms.repository.AppointmentRepository;
+import com.hospital.hms.repository.AdminRepository;
+import com.hospital.hms.repository.ReceptionistRepository;
 import com.hospital.hms.repository.DoctorRepository;
 import com.hospital.hms.repository.PatientRepository;
 import com.hospital.hms.service.AppointmentService;
@@ -36,6 +38,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final DoctorRepository      doctorRepository;
     private final NotificationService   notificationService;
     private final InvoiceService        invoiceService;
+    private final AdminRepository       adminRepository;
+    private final ReceptionistRepository receptionistRepository;
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -43,6 +47,18 @@ public class AppointmentServiceImpl implements AppointmentService {
                         NotificationType type, String url) {
         try { notificationService.sendNotification(recipientId, title, message, type, url); }
         catch (Exception e) { log.warn("Appointment notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
+    }
+
+    private void notifyAllReceptionists(String title, String message, String url) {
+        try { receptionistRepository.findAll().forEach(r ->
+            notify(r.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Receptionist broadcast skipped: {}", e.getMessage()); }
     }
 
     // ── Queries ────────────────────────────────────────────────────────────
@@ -126,6 +142,16 @@ public class AppointmentServiceImpl implements AppointmentService {
                 NotificationType.APPOINTMENT_CONFIRMED,
                 "/doctor/appointments");
 
+        notifyAdmins("New Appointment Booked",
+                "Patient " + patient.getName() + " booked appointment with Dr. " + doctor.getName()
+                + " on " + saved.getAppointmentDate() + ".",
+                "/admin/appointments");
+
+        notifyAllReceptionists("New Appointment — Action Required",
+                "Patient " + patient.getName() + " booked an appointment with Dr. " + doctor.getName()
+                + " on " + saved.getAppointmentDate() + ". Please confirm or cancel.",
+                "/receptionist/appointments");
+
         return AppointmentMapper.mapToAppointmentDTO(saved);
     }
 
@@ -187,6 +213,11 @@ public class AppointmentServiceImpl implements AppointmentService {
                 NotificationType.APPOINTMENT_CONFIRMED,
                 "/patient/appointments");
 
+        notifyAdmins("Appointment Confirmed",
+                "Dr. " + updated.getDoctorName() + " confirmed appointment with " + updated.getPatientName()
+                + " on " + updated.getAppointmentDate() + ".",
+                "/admin/appointments");
+
         return AppointmentMapper.mapToAppointmentDTO(updated);
     }
 
@@ -202,6 +233,10 @@ public class AppointmentServiceImpl implements AppointmentService {
                 "Your appointment with Dr. " + updated.getDoctorName() + " has been completed.",
                 NotificationType.APPOINTMENT_COMPLETED,
                 "/patient/appointments");
+
+        notifyAdmins("Appointment Completed",
+                "Appointment between Dr. " + updated.getDoctorName() + " and " + updated.getPatientName() + " completed.",
+                "/admin/appointments");
 
         return AppointmentMapper.mapToAppointmentDTO(updated);
     }
@@ -227,6 +262,11 @@ public class AppointmentServiceImpl implements AppointmentService {
                 " on " + updated.getAppointmentDate() + " has been cancelled.",
                 NotificationType.APPOINTMENT_CANCELLED,
                 "/doctor/appointments");
+
+        notifyAdmins("Appointment Cancelled",
+                "Appointment between Dr. " + updated.getDoctorName() + " and " + updated.getPatientName()
+                + " on " + updated.getAppointmentDate() + " was cancelled.",
+                "/admin/appointments");
 
         return AppointmentMapper.mapToAppointmentDTO(updated);
     }

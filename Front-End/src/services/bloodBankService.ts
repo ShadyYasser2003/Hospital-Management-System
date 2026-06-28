@@ -72,6 +72,26 @@ export interface CreateBloodRequestPayload {
   notes?: string;
 }
 
+// ── Blood Donation DTO ────────────────────────────────────────────────────────
+
+export interface BloodDonationDto {
+  id?: number;
+  donorName: string;
+  donorPhone?: string;
+  donorNationalId?: string;
+  bloodType: string;
+  quantity: number;
+  donationDate?: string;
+  expiryDate?: string;
+  notes?: string;
+  /** GENERAL | SPECIFIC_PATIENT */
+  donationType: 'GENERAL' | 'SPECIFIC_PATIENT';
+  targetPatientId?: number;
+  targetPatientName?: string;
+  bloodUnitId?: number;
+  createdAt?: string;
+}
+
 // ─── Service ─────────────────────────────────────────────────────────────────
 
 const bloodBankService = {
@@ -136,6 +156,23 @@ const bloodBankService = {
     const { data } = await api.patch<BloodRequestDto>(
       `/api/blood-bank/requests/${id}/cancel`,
     );
+    return data;
+  },
+
+  // ── Blood Donations ─────────────────────────────────────────────────────────
+
+  async recordDonation(payload: BloodDonationDto): Promise<BloodDonationDto> {
+    const { data } = await api.post<BloodDonationDto>('/api/blood-bank/donations', payload);
+    return data;
+  },
+
+  async getAllDonations(): Promise<BloodDonationDto[]> {
+    const { data } = await api.get<BloodDonationDto[]>('/api/blood-bank/donations');
+    return data;
+  },
+
+  async getDonationsByPatient(patientId: number | string): Promise<BloodDonationDto[]> {
+    const { data } = await api.get<BloodDonationDto[]>(`/api/blood-bank/donations/patient/${patientId}`);
     return data;
   },
 };

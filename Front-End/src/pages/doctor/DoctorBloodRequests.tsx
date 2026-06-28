@@ -79,6 +79,16 @@ const DoctorBloodRequests: React.FC = () => {
   const completedList = myRequests.filter(r => r.status === 'COMPLETED');
   const cancelledList = myRequests.filter(r => r.status === 'CANCELLED');
 
+  // Auto-fill blood type when patient is selected
+  const handlePatientChange = (patientId: string) => {
+    const patient = patients.find(p => String(p.id) === patientId);
+    setForm(prev => ({
+      ...prev,
+      patientId,
+      bloodType: patient?.bloodType ?? prev.bloodType,
+    }));
+  };
+
   const handleCreate = async () => {
     if (!form.patientId)  { toast.error('Please select a patient'); return; }
     if (!form.bloodType)  { toast.error('Please select a blood type'); return; }
@@ -159,9 +169,6 @@ const DoctorBloodRequests: React.FC = () => {
         description="Request blood units for patients"
         action={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" />Refresh
-            </Button>
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
               <DialogTrigger asChild>
                 <Button><Plus className="h-4 w-4 mr-2" />Request Blood</Button>
@@ -171,12 +178,12 @@ const DoctorBloodRequests: React.FC = () => {
                 <div className="space-y-4">
                   <div>
                     <Label>Patient <span className="text-destructive">*</span></Label>
-                    <Select value={form.patientId} onValueChange={v => setForm(p => ({ ...p, patientId: v }))}>
+                    <Select value={form.patientId} onValueChange={handlePatientChange}>
                       <SelectTrigger><SelectValue placeholder="Select patient…" /></SelectTrigger>
                       <SelectContent>
                         {patients.map(pt => (
                           <SelectItem key={pt.id} value={String(pt.id)}>
-                            {pt.name} — {pt.nationalId}
+                            {pt.name} — {pt.nationalId}{pt.bloodType ? ` (${pt.bloodType})` : ''}
                           </SelectItem>
                         ))}
                       </SelectContent>

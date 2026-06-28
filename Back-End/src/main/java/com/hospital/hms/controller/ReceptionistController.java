@@ -2,6 +2,7 @@ package com.hospital.hms.controller;
 
 import com.hospital.hms.dto.ReceptionistDto;
 import com.hospital.hms.service.ReceptionistService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -24,11 +25,11 @@ public class ReceptionistController {
         return ResponseEntity.ok(receptionistService.getReceptionistById(id));
     }
     @PostMapping
-    public ResponseEntity<ReceptionistDto> createReceptionist(@RequestBody ReceptionistDto receptionistDto){
+    public ResponseEntity<ReceptionistDto> createReceptionist(@Valid @RequestBody ReceptionistDto receptionistDto){
         return new ResponseEntity<>(receptionistService.createReceptionist(receptionistDto), HttpStatus.CREATED);
     }
     @PutMapping("/{id}")
-    public ResponseEntity<ReceptionistDto> updateReceptionist(@PathVariable Long id,@RequestBody ReceptionistDto receptionistDto){
+    public ResponseEntity<ReceptionistDto> updateReceptionist(@PathVariable Long id, @Valid @RequestBody ReceptionistDto receptionistDto){
         return ResponseEntity.ok(receptionistService.updateReceptionist(id, receptionistDto));
     }
     @GetMapping("/name")
@@ -47,8 +48,9 @@ public class ReceptionistController {
     public ResponseEntity<List<ReceptionistDto>> getReceptionistByEmploymentStatus(@RequestParam("employmentStatus") String status){
         return ResponseEntity.ok(receptionistService.getReceptionistByEmploymentStatus(status));
     }
-    /*@GetMapping("/specialityArea")
-    public ResponseEntity<List<ReceptionistDto>> getReceptionistBySpecialityArea(@RequestParam String SpecialityArea){
-        return ResponseEntity.ok(receptionistService.getReceptionistBySpecialityArea(SpecialityArea));
-    }*/
+    /*
+     * Removed: getReceptionistBySpecialityArea - endpoint was disabled.
+     * specialityArea is stored on the entity but filtering by it via API
+     * is not currently required.
+     */
 }

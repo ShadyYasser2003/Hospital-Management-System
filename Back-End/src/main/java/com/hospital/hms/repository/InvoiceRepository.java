@@ -5,7 +5,9 @@ import com.hospital.hms.entity.Invoice;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,4 +19,8 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
     Page<Invoice> findByPatientId(Long patientId, Pageable pageable);
     List<Invoice> findByStatus(InvoiceStatus status);
     Page<Invoice> findByStatus(InvoiceStatus status, Pageable pageable);
+
+    @Modifying
+    @Transactional
+    void deleteByPatientId(Long patientId);
 }

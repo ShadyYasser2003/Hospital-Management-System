@@ -19,7 +19,7 @@ import {
   useCreateAppointment,
   useCancelAppointment,
 } from '@/hooks/useAppointments';
-import { usePatients } from '@/hooks/usePatients';
+import { useMyPatientProfile } from '@/hooks/usePatients';
 import { useDepartments } from '@/hooks/useDepartments';
 import { useQuery } from '@tanstack/react-query';
 import doctorService from '@/services/doctorService';
@@ -38,11 +38,7 @@ const PatientAppointments = () => {
   const { user } = useAuth();
   const today = new Date().toISOString().split('T')[0];
 
-  // Find the patient record that matches the logged-in user
-  const { data: patients = [] } = usePatients();
-  const patient = patients.find(
-    (p) => String(p.id) === user?.id || p.nationalId === user?.nationalId,
-  );
+  const { data: patient } = useMyPatientProfile();
 
   const { data: appointments = [], isLoading, error } = useAppointmentsByPatient(patient?.id);
   const { data: departments = [] } = useDepartments();

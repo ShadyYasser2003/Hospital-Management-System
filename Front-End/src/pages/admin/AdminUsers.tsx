@@ -23,6 +23,7 @@ import { Plus, Search, Edit, UserX, UserCheck, Trash2, Eye, EyeOff, AlertCircle 
 import { adminNavItems } from '@/constants/adminNavItems';
 import userService, { UserDto } from '@/services/userService';
 import api from '@/lib/api';
+import { validateUsername, USERNAME_HINT } from '@/utils/usernameValidation';
 import { useQueryClient } from '@tanstack/react-query';
 import { USERS_KEY } from '@/hooks/useUsers';
 
@@ -260,7 +261,11 @@ const CommonFields = ({
 }: CommonFieldsProps) => (
   <>
     <div className="grid grid-cols-2 gap-4">
-      <div><Label>Username <span className="text-destructive">*</span></Label><Input value={form.username} onChange={e => onChange({ ...form, username: e.target.value })} required /></div>
+      <div>
+        <Label>Username <span className="text-destructive">*</span></Label>
+        <Input value={form.username} onChange={e => onChange({ ...form, username: e.target.value })} required />
+        <p className="text-xs text-muted-foreground mt-1">{USERNAME_HINT}</p>
+      </div>
       <div><Label>National ID <span className="text-destructive">*</span></Label><Input value={form.nationalId} onChange={e => onChange({ ...form, nationalId: e.target.value })} required /></div>
     </div>
     <div><Label>Full Name <span className="text-destructive">*</span></Label><Input value={form.name} onChange={e => onChange({ ...form, name: e.target.value })} required /></div>
@@ -397,6 +402,8 @@ const AdminUsers = () => {
       toast.error('Please fill in all required fields including password');
       return;
     }
+    const usernameCheck = validateUsername(newUser.username);
+    if (!usernameCheck.valid) { toast.error(usernameCheck.error!); return; }
     if (newUser.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     try {
       const payload = buildPayload(newUser);
@@ -432,6 +439,8 @@ const AdminUsers = () => {
   const handleEditUser = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    const usernameCheck = validateUsername(editForm.username);
+    if (!usernameCheck.valid) { toast.error(usernameCheck.error!); return; }
     try {
       const payload = buildPayload(editForm);
       // Don't send empty password on edit

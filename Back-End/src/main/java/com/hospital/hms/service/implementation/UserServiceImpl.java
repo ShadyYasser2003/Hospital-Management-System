@@ -12,7 +12,10 @@ import com.hospital.hms.exception.PasswordEmptyException;
 import com.hospital.hms.exception.UserNameAlreadyExistException;
 import com.hospital.hms.exception.UserNotFoundException;
 import com.hospital.hms.mapper.UserMapper;
+import com.hospital.hms.repository.NotificationRepository;
+import com.hospital.hms.repository.RefreshTokenRepository;
 import com.hospital.hms.repository.UserRepository;
+import com.hospital.hms.service.EmailService;
 import com.hospital.hms.service.RefreshTokenService;
 import com.hospital.hms.service.UserService;
 import com.hospital.hms.util.JwtUtil;
@@ -22,17 +25,22 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.security.SecureRandom;
 import java.time.LocalDate;
 import java.util.List;
 
 @Service
 @AllArgsConstructor
 public class UserServiceImpl implements UserService {
-    private final UserRepository userRepository ;
-    private final PasswordEncoder passwordEncoder;
-    private final JwtUtil jwtUtil;
-    private final RefreshTokenService refreshTokenService ;
+    private final UserRepository         userRepository;
+    private final PasswordEncoder        passwordEncoder;
+    private final JwtUtil                jwtUtil;
+    private final RefreshTokenService    refreshTokenService;
+    private final EmailService           emailService;
+    private final NotificationRepository notificationRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
 
     @Override
     public LoginResponse login(LoginRequest request) throws Exception {
@@ -143,9 +151,15 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public void deleteUser(Long id) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
+        // 1. Delete notifications (FK: notifications.recipient_id → users.id)
+        notificationRepository.deleteByRecipientId(id);
+        // 2. Delete refresh tokens (FK: refresh_tokens.user_id → users.id)
+        refreshTokenRepository.deleteByUser(user);
+        // 3. Now safe to delete the user
         userRepository.delete(user);
     }
 
@@ -191,6 +205,26 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("Invalid status value: " + status + ". Must be ACTIVE or INACTIVE.");
         }
         return UserMapper.mapToUserDto(userRepository.save(user));
+    }
+
+    @Override
+    public void forgotPassword(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UserNotFoundException("No account found with that email address"));
+
+        // Generate a random 10-character temporary password
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+        SecureRandom rng = new SecureRandom();
+        StringBuilder temp = new StringBuilder(10);
+        for (int i = 0; i < 10; i++) {
+            temp.append(chars.charAt(rng.nextInt(chars.length())));
+        }
+        String temporaryPassword = temp.toString();
+
+        user.setPassword(passwordEncoder.encode(temporaryPassword));
+        userRepository.save(user);
+
+        emailService.sendPasswordResetEmail(user.getEmail(), user.getUsername(), temporaryPassword);
     }
 
 }

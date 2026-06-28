@@ -33,6 +33,7 @@ public class SecurityConfig {
     private static final String[] PUBLIC_URLS = {
             "/api/auth/login",
             "/api/auth/refresh-token",
+            "/api/auth/forgot-password",     // no auth needed — user is logged out
             "/api/departments",              // public — used on homepage without auth
             "/api/departments/**",
             "/api/specialities/**",          // public specialty listing
@@ -72,6 +73,7 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(List.of(
                 "http://localhost:5173",
                 "http://localhost:5174",
+                "http://localhost:5175",
                 "http://localhost:8081",
                 "http://localhost:8082",
                 "http://localhost:8080",
@@ -97,53 +99,54 @@ public class SecurityConfig {
 
                         .requestMatchers(PUBLIC_URLS).permitAll()
 
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/admin", "/api/admin/**").hasRole("ADMIN")
 
                         // ── Doctor + Admin ──────────────────────────────────────
-                        .requestMatchers("/api/doctor/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "PATIENT")
-                        .requestMatchers("/api/appointments/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "PATIENT", "NURSE")
-                        .requestMatchers("/api/prescriptions/**").hasAnyRole("ADMIN", "DOCTOR", "PHARMACIST", "PATIENT", "NURSE")
+                        .requestMatchers("/api/doctor", "/api/doctor/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "NURSE", "PATIENT")
+                        .requestMatchers("/api/appointments", "/api/appointments/**").hasAnyRole("ADMIN", "DOCTOR", "RECEPTIONIST", "PATIENT", "NURSE")
+                        .requestMatchers("/api/prescriptions", "/api/prescriptions/**").hasAnyRole("ADMIN", "DOCTOR", "PHARMACIST", "PATIENT", "NURSE")
 
-                        .requestMatchers("/api/nurse/**").hasAnyRole("ADMIN", "NURSE", "DOCTOR")
+                        .requestMatchers("/api/nurse", "/api/nurse/**").hasAnyRole("ADMIN", "NURSE", "DOCTOR")
 
-                        .requestMatchers("/api/medicine/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR", "NURSE")
-                        .requestMatchers("/api/medicine-stock/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR")
-                        .requestMatchers("/api/medicine-dispensation/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR")
+                        .requestMatchers("/api/medicine", "/api/medicine/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR", "NURSE")
+                        .requestMatchers("/api/medicine-stock", "/api/medicine-stock/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR")
+                        .requestMatchers("/api/medicine-dispensation", "/api/medicine-dispensation/**").hasAnyRole("ADMIN", "PHARMACIST", "DOCTOR")
 
-                        .requestMatchers("/api/receptionist/**").hasAnyRole("ADMIN", "RECEPTIONIST")
-                        .requestMatchers("/api/patients/**").hasAnyRole("ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PATIENT", "ACCOUNTANT")
-                        .requestMatchers("/api/external-hospitals/**").hasAnyRole("ADMIN", "DOCTOR")
-                        .requestMatchers("/api/transfers/**").hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers("/api/receptionist", "/api/receptionist/**").hasAnyRole("ADMIN", "RECEPTIONIST")
+                        .requestMatchers("/api/patients", "/api/patients/**").hasAnyRole("ADMIN", "DOCTOR", "NURSE", "RECEPTIONIST", "PATIENT", "ACCOUNTANT")
+                        .requestMatchers("/api/external-hospitals", "/api/external-hospitals/**").hasAnyRole("ADMIN", "DOCTOR")
+                        .requestMatchers("/api/transfers", "/api/transfers/**").hasAnyRole("ADMIN", "DOCTOR")
 
                         // ── Technician ────────────────────────────────────────────
-                        .requestMatchers("/api/technicians/**").hasAnyRole("ADMIN", "TECHNICIAN")
-                        .requestMatchers("/api/lab-tests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
-                        .requestMatchers("/api/radiology-orders/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
+                        .requestMatchers("/api/technicians", "/api/technicians/**").hasAnyRole("ADMIN", "TECHNICIAN")
+                        .requestMatchers("/api/lab-tests", "/api/lab-tests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
+                        .requestMatchers("/api/radiology-orders", "/api/radiology-orders/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
 
                         // ── Blood Bank ────────────────────────────────────────────
-                        .requestMatchers("/api/blood-bank/units/**").hasAnyRole("ADMIN", "TECHNICIAN", "DOCTOR", "NURSE")
-                        .requestMatchers("/api/blood-bank/requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
+                        .requestMatchers("/api/blood-bank/units", "/api/blood-bank/units/**").hasAnyRole("ADMIN", "TECHNICIAN", "DOCTOR", "NURSE")
+                        .requestMatchers("/api/blood-bank/requests", "/api/blood-bank/requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT", "NURSE")
+                        .requestMatchers("/api/blood-bank/donations", "/api/blood-bank/donations/**").hasAnyRole("ADMIN", "TECHNICIAN", "RECEPTIONIST")
 
                         // ── Users (admin + any authenticated user reading own data) ─
-                        .requestMatchers("/api/users/**").authenticated()
+                        .requestMatchers("/api/users", "/api/users/**").authenticated()
                         .requestMatchers("/api/auth/**").authenticated()
 
                         // ── Invoices & Payments ───────────────────────────────────
-                        .requestMatchers("/api/invoices/**").hasAnyRole("ADMIN", "ACCOUNTANT", "DOCTOR", "PATIENT", "RECEPTIONIST")
-                        .requestMatchers("/api/paypal/**").hasAnyRole("ADMIN", "ACCOUNTANT", "PATIENT")
-                        .requestMatchers("/api/kashier/**").hasAnyRole("ADMIN", "ACCOUNTANT", "PATIENT")
+                        .requestMatchers("/api/invoices", "/api/invoices/**").hasAnyRole("ADMIN", "ACCOUNTANT", "DOCTOR", "PATIENT", "RECEPTIONIST")
+                        .requestMatchers("/api/paypal", "/api/paypal/**").hasAnyRole("ADMIN", "ACCOUNTANT", "PATIENT")
+                        .requestMatchers("/api/kashier", "/api/kashier/**").hasAnyRole("ADMIN", "ACCOUNTANT", "PATIENT")
 
                         // ── Notifications ─────────────────────────────────────────
-                        .requestMatchers("/api/notifications/**").authenticated()
+                        .requestMatchers("/api/notifications", "/api/notifications/**").authenticated()
 
                         // ── Accountants ───────────────────────────────────────────
-                        .requestMatchers("/api/accountants/**").hasAnyRole("ADMIN", "ACCOUNTANT")
+                        .requestMatchers("/api/accountants", "/api/accountants/**").hasAnyRole("ADMIN", "ACCOUNTANT")
 
                         // ── Specialities & Departments ────────────────────────────
-                        .requestMatchers("/api/specialities/**").authenticated()
+                        .requestMatchers("/api/specialities", "/api/specialities/**").authenticated()
 
                         // ── Test Requests (legacy endpoint) ───────────────────────
-                        .requestMatchers("/api/test-requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")
+                        .requestMatchers("/api/test-requests", "/api/test-requests/**").hasAnyRole("ADMIN", "DOCTOR", "TECHNICIAN", "PATIENT")
 
                         .anyRequest().authenticated()
                 )

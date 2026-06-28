@@ -3,7 +3,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import PageHeader from '@/components/shared/PageHeader';
 import StatusBadge from '@/components/shared/StatusBadge';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 import { useInvoicesByPatient, usePaymentsByPatient } from '@/hooks/useInvoices';
 import { InvoiceDto, PaymentDto } from '@/services/invoiceService';
 import invoiceService from '@/services/invoiceService';
@@ -42,8 +43,16 @@ const MethodBadge = ({ method }: { method?: string }) => {
 
 const PatientBilling = () => {
   const { user } = useAuth();
-  const { data: patients = [] } = usePatients();
-  const patient = patients.find(p => String(p.id) === user?.id || p.nationalId === user?.nationalId);
+
+  // Fetch own patient profile directly — no need to load all patients
+  const { data: patient } = useQuery({
+    queryKey: ['patient-me'],
+    queryFn: async () => {
+      const { data } = await api.get('/api/patients/me');
+      return data;
+    },
+    enabled: !!user,
+  });
 
   const { data: invoices = [],  isLoading: loadingInvoices } = useInvoicesByPatient(patient?.id);
   const { data: payments = [],  isLoading: loadingPayments } = usePaymentsByPatient(patient?.id);

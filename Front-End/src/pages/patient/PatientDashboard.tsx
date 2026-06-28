@@ -4,7 +4,7 @@ import StatCard from '@/components/shared/StatCard';
 import QuickAction from '@/components/shared/QuickAction';
 import ProfileForm from '@/components/shared/ProfileForm';
 import { useAuth } from '@/contexts/AuthContext';
-import { usePatients } from '@/hooks/usePatients';
+import { useMyPatientProfile } from '@/hooks/usePatients';
 import { useAppointmentsByPatient } from '@/hooks/useAppointments';
 import { usePrescriptionsByPatient } from '@/hooks/usePrescriptions';
 import { useUnreadCount } from '@/hooks/useNotifications';
@@ -23,8 +23,7 @@ const navItems = [
 
 export const PatientDashboard = () => {
   const { user } = useAuth();
-  const { data: patients = [] } = usePatients();
-  const patient = patients.find(p => String(p.id) === user?.id || p.nationalId === user?.nationalId);
+  const { data: patient } = useMyPatientProfile();
 
   const { data: appointments = [] }  = useAppointmentsByPatient(patient?.id);
   const { data: prescriptions = [] } = usePrescriptionsByPatient(patient?.id);

@@ -1,5 +1,5 @@
 package com.hospital.hms.Enum;
 
 public enum PatientStatus {
-    ADMITTED, DISCHARGED, ACTIVE
+    ACTIVE, ADMITTED, DISCHARGED, CHECKED_OUT
 }

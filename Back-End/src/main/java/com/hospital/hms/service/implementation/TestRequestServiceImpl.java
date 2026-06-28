@@ -39,6 +39,7 @@ public class TestRequestServiceImpl implements TestRequestService {
     private final AccountantRepository  accountantRepository;
     private final NotificationService   notificationService;
     private final InvoiceService        invoiceService;
+    private final AdminRepository       adminRepository;
 
     private static final String UPLOAD_DIR = "uploads/reports/";
 
@@ -46,6 +47,12 @@ public class TestRequestServiceImpl implements TestRequestService {
                         NotificationType type, String actionUrl) {
         try { notificationService.sendNotification(recipientId, title, message, type, actionUrl); }
         catch (Exception e) { log.warn("Notification skipped for user {}: {}", recipientId, e.getMessage()); }
+    }
+
+    private void notifyAdmins(String title, String message, String url) {
+        try { adminRepository.findAll().forEach(a ->
+            notify(a.getId(), title, message, NotificationType.GENERAL, url));
+        } catch (Exception e) { log.warn("Admin broadcast skipped: {}", e.getMessage()); }
     }
 
     private TestRequest getEntity(Long id) {
@@ -82,6 +89,10 @@ public class TestRequestServiceImpl implements TestRequestService {
                         "A new " + dto.getTestType() + " test is available.",
                         NotificationType.TEST_ASSIGNED, "/technician/requests"));
         } catch (Exception e) { log.warn("Could not notify technicians: {}", e.getMessage()); }
+
+        notifyAdmins("New Test Requested",
+                "Dr. " + doctor.getName() + " requested " + dto.getTestType() + " test for " + patient.getName() + ".",
+                "/admin/diagnosis");
 
         return TestRequestMapper.mapToDto(saved);
     }
@@ -186,6 +197,10 @@ public class TestRequestServiceImpl implements TestRequestService {
                 "Your " + tr.getTestType() + " results are now available.",
                 NotificationType.TEST_COMPLETED, "/patient/tests/" + saved.getId());
 
+        notifyAdmins("Test Completed",
+                tr.getTestType() + " test for patient " + tr.getPatient().getName() + " has been completed.",
+                "/admin/diagnosis");
+
         if (saved.getCharges() != null && saved.getCharges() > 0) {
             try {
                 invoiceService.addTestCharge(saved.getPatient().getId(), saved.getId(),
@@ -230,6 +245,10 @@ public class TestRequestServiceImpl implements TestRequestService {
         notify(tr.getDoctor().getId(), "Test Request Cancelled",
                 "The " + tr.getTestType() + " test for patient " + tr.getPatient().getName() + " has been cancelled.",
                 NotificationType.TEST_COMPLETED, "/doctor/tests/" + saved.getId());
+
+        notifyAdmins("Test Request Cancelled",
+                tr.getTestType() + " test for patient " + tr.getPatient().getName() + " was cancelled.",
+                "/admin/diagnosis");
 
         return TestRequestMapper.mapToDto(saved);
     }
