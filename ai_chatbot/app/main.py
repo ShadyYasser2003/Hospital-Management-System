@@ -150,6 +150,7 @@ def extract_final_answer(text: str) -> str:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
+@app.post("/invocations", response_model=ChatResponse)
 async def chat_endpoint(request: ChatRequest):
     try:
         query = request.question
