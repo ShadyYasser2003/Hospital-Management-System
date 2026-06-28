@@ -69,3 +69,4 @@ Back-End/Back-End/hospital-management-system-main/target/
 Back-End/src/target/
 *.tfstate
 *.tfstate.backup
+/docs/study
