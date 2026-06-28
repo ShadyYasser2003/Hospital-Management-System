@@ -5,7 +5,6 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import AIChatbot from '@/components/shared/AIChatbot';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -228,9 +227,6 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children, navItems, t
           {children}
         </main>
       </div>
-
-      {/* AI Chatbot - Patient only */}
-      {user?.role === 'patient' && <AIChatbot />}
     </div>
   );
 };
