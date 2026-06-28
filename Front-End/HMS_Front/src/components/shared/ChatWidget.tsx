@@ -43,7 +43,7 @@ const ChatWidget: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/chatbot-api/api/chat', {
+      const response = await fetch('https://1poeaxsg2f.execute-api.us-east-1.amazonaws.com/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question: userMessage.content }),
