@@ -371,7 +371,7 @@ helm install hms-frontend infrastructure/helm/frontend/ -n hms-production
 
 **Role:** AWS Solutions Architect & DevOps Engineer
 
-Built as a graduation project demonstrating enterprise-grade cloud architecture, infrastructure automation, container orchestration, GitOps, observability, security, and AI integration on AWS.
+Built as enterprise-grade cloud architecture, infrastructure automation, container orchestration, GitOps, observability, security, and AI integration on AWS.
 
 ---
 
